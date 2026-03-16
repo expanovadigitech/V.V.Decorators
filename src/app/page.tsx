@@ -42,9 +42,9 @@ export default function CRMPage() {
   // ── Theme State ─────────────────────────────────────────────────────────────
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-  // Load from localStorage on mount
+  // Load from localStorage/Supabase on mount
   useEffect(() => {
-    setBookings(loadBookings());
+    loadBookings().then(setBookings);
     const savedTheme = localStorage.getItem('vvd_theme');
     if (savedTheme === 'dark') setTheme('dark');
   }, []);
@@ -70,13 +70,13 @@ export default function CRMPage() {
   }, []);
 
   // ─── CRUD ───────────────────────────────────────────────────────────────────
-  function handleSave(booking: Booking) {
+  async function handleSave(booking: Booking) {
     const existing = bookings.find((b) => b.id === booking.id);
     if (existing) {
-      setBookings(updateBooking(booking));
+      setBookings(await updateBooking(booking));
       pushToast(`✓ Booking for "${booking.clientName}" updated successfully`);
     } else {
-      setBookings(addBooking(booking));
+      setBookings(await addBooking(booking));
       pushToast(`✓ New booking for "${booking.clientName}" created`);
     }
     setModal({ open: false, booking: null });
@@ -86,35 +86,35 @@ export default function CRMPage() {
     setConfirmDelete(id);
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!confirmDelete) return;
     const b = bookings.find((x) => x.id === confirmDelete);
-    setBookings(deleteBooking(confirmDelete));
+    setBookings(await deleteBooking(confirmDelete));
     pushToast(`Booking for "${b?.clientName}" permanently deleted`, 'error');
     setConfirmDelete(null);
   }
 
   // ── Mark as Done (Completed) ──────────────────────────────────────────
-  function handleMarkDone(id: string) {
+  async function handleMarkDone(id: string) {
     const b = bookings.find(x => x.id === id);
     if (!b) return;
-    setBookings(updateBooking({ ...b, status: 'Done', updatedAt: new Date().toISOString() }));
+    setBookings(await updateBooking({ ...b, status: 'Done', updatedAt: new Date().toISOString() }));
     pushToast(`✓ "${b.clientName}" marked as Done`);
   }
 
   // ── Soft-delete (Trash) ─────────────────────────────────────────────
-  function handleTrashRequest(id: string) {
+  async function handleTrashRequest(id: string) {
     const b = bookings.find(x => x.id === id);
     if (!b) return;
-    const updated = updateBooking({ ...b, status: 'Trashed', trashedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    const updated = await updateBooking({ ...b, status: 'Trashed', trashedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
     setBookings(updated);
     pushToast(`"${b.clientName}" moved to Trash`, 'error');
   }
 
-  function handleRestore(id: string) {
+  async function handleRestore(id: string) {
     const b = bookings.find(x => x.id === id);
     if (!b) return;
-    setBookings(updateBooking({ ...b, status: 'Active', trashedAt: undefined, updatedAt: new Date().toISOString() }));
+    setBookings(await updateBooking({ ...b, status: 'Active', trashedAt: undefined, updatedAt: new Date().toISOString() }));
     pushToast(`✓ "${b.clientName}" restored`);
   }
 
@@ -125,10 +125,10 @@ export default function CRMPage() {
     setConfirmPermDelete(id);
   }
 
-  function handlePermanentDeleteConfirm() {
+  async function handlePermanentDeleteConfirm() {
     if (!confirmPermDelete) return;
     const b = bookings.find(x => x.id === confirmPermDelete);
-    setBookings(deleteBooking(confirmPermDelete));
+    setBookings(await deleteBooking(confirmPermDelete));
     pushToast(`"${b?.clientName}" permanently deleted`, 'error');
     setConfirmPermDelete(null);
   }
@@ -167,10 +167,10 @@ export default function CRMPage() {
   }, [bookings, filter, search, sortField, sortDir]);
 
   // ── Mark Active (revert Done → Active) ─────────────────────────────────────
-  function handleMarkActive(id: string) {
+  async function handleMarkActive(id: string) {
     const b = bookings.find(x => x.id === id);
     if (!b) return;
-    setBookings(updateBooking({ ...b, status: 'Active', updatedAt: new Date().toISOString() }));
+    setBookings(await updateBooking({ ...b, status: 'Active', updatedAt: new Date().toISOString() }));
     pushToast(`✓ "${b.clientName}" set back to Active`);
   }
 
@@ -195,7 +195,7 @@ export default function CRMPage() {
     setInvoiceModal({ open: true, booking });
   }
 
-  function handleInvoiceConfirm(params: InvoiceBillingParams) {
+  async function handleInvoiceConfirm(params: InvoiceBillingParams) {
     if (!invoiceModal.booking) return;
     const b = invoiceModal.booking;
 
@@ -209,7 +209,7 @@ export default function CRMPage() {
         totalEventValue: params.grandTotal,
         balanceAmount: params.finalBalance,
       };
-      const updated = updateBooking(updatedBooking);
+      const updated = await updateBooking(updatedBooking);
       setBookings(updated);
       pushToast(`✓ Booking record updated for ${b.clientName}`);
     }

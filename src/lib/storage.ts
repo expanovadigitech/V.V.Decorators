@@ -1,6 +1,6 @@
 import { Booking } from '@/types';
+import { supabase } from '@/lib/supabase';
 
-const STORAGE_KEY = 'vvd_crm_bookings';
 const VENUES_KEY = 'vvd_crm_venues';
 
 export const DEFAULT_VENUES = [
@@ -16,47 +16,57 @@ export const DEFAULT_VENUES = [
 
 // ─── Bookings ────────────────────────────────────────────────────────────────
 
-export function loadBookings(): Booking[] {
-  if (typeof window === 'undefined') return [];
+export async function loadBookings(): Promise<Booking[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as any[];
-    // Migrate old string additionalServices to empty array
-    return parsed.map(b => ({
+    const { data, error } = await supabase.from('bookings').select('*').order('createdAt', { ascending: false });
+    if (error) {
+      console.error('Error fetching bookings:', error);
+      return [];
+    }
+    // Handle JSON parsing if necessary (Supabase SDK auto parses JSON columns typically)
+    // but just in case, we map to ensure types are correct.
+    return (data || []).map(b => ({
       ...b,
       additionalServices: Array.isArray(b.additionalServices) ? b.additionalServices : [],
       roomCost: typeof b.roomCost === 'number' ? b.roomCost : 0,
+      daysOverview: Array.isArray(b.daysOverview) ? b.daysOverview : [],
+      menuItems: typeof b.menuItems === 'object' && b.menuItems !== null ? b.menuItems : {},
+      mealMenus: typeof b.mealMenus === 'object' && b.mealMenus !== null ? b.mealMenus : {},
     })) as Booking[];
-  } catch {
+  } catch (err) {
+    console.error('Exception loading bookings:', err);
     return [];
   }
 }
 
-export function saveBookings(bookings: Booking[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
+export async function addBooking(booking: Booking): Promise<Booking[]> {
+  try {
+    const { error } = await supabase.from('bookings').insert([booking]);
+    if (error) console.error('Error adding booking:', error);
+  } catch (err) {
+    console.error('Exception adding booking:', err);
+  }
+  return loadBookings();
 }
 
-export function addBooking(booking: Booking): Booking[] {
-  const bookings = loadBookings();
-  const updated = [booking, ...bookings];
-  saveBookings(updated);
-  return updated;
+export async function updateBooking(updated: Booking): Promise<Booking[]> {
+  try {
+    const { error } = await supabase.from('bookings').update(updated).eq('id', updated.id);
+    if (error) console.error('Error updating booking:', error);
+  } catch (err) {
+    console.error('Exception updating booking:', err);
+  }
+  return loadBookings();
 }
 
-export function updateBooking(updated: Booking): Booking[] {
-  const bookings = loadBookings();
-  const list = bookings.map((b) => (b.id === updated.id ? updated : b));
-  saveBookings(list);
-  return list;
-}
-
-export function deleteBooking(id: string): Booking[] {
-  const bookings = loadBookings();
-  const list = bookings.filter((b) => b.id !== id);
-  saveBookings(list);
-  return list;
+export async function deleteBooking(id: string): Promise<Booking[]> {
+  try {
+    const { error } = await supabase.from('bookings').delete().eq('id', id);
+    if (error) console.error('Error deleting booking:', error);
+  } catch (err) {
+    console.error('Exception deleting booking:', err);
+  }
+  return loadBookings();
 }
 
 // ─── Venues ──────────────────────────────────────────────────────────────────
