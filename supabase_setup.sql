@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   
   "perPlateCost" numeric,
   "totalEventValue" numeric,
+  "overrideTotalAmount" numeric,
   "advancePaid" numeric,
   "paymentMode" text,
   "chequeNumber" text,
