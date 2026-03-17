@@ -9,7 +9,8 @@ export type MealType = 'Breakfast' | 'Lunch' | 'High Tea' | 'Dinner';
 
 export interface MealSection {
   guestCount: number;
-  dishes: Record<string, string[]>;  // same categories as single-day menu
+  venue?: string;                            // per-meal venue
+  dishes: Record<string, string[]>;          // same categories as single-day menu
 }
 
 export interface DayOverview {
@@ -52,6 +53,7 @@ export interface Booking {
   menuItems: Record<string, string[]>;        // Single-Day categorised menu
   mealMenus?: Record<string, MealSection>;    // Multi-Day meal sections
   notes: string;
+  overrideTotalAmount?: number;              // Manual override for total amount
 
   // ── Facilities ────────────────────────────────────────────────────────────
   roomsRequired: number;

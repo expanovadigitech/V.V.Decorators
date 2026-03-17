@@ -356,6 +356,24 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
     fmt(booking.totalEventValue),
   ]);
 
+  // Rooms row
+  if ((booking.roomsRequired ?? 0) > 0) {
+    const roomTotal = (booking.roomsRequired ?? 0) * (booking.roomCost ?? 0);
+    body.push([
+      `Room Accommodation (${booking.roomsRequired} room${(booking.roomsRequired ?? 0) > 1 ? 's' : ''})`,
+      booking.roomCost ? fmt(booking.roomCost) : '—',
+      String(booking.roomsRequired),
+      roomTotal > 0 ? fmt(roomTotal) : 'Included',
+    ]);
+  }
+
+  // Additional services rows
+  if (booking.additionalServices && booking.additionalServices.length > 0) {
+    booking.additionalServices.filter(s => s.name).forEach(s => {
+      body.push([s.name, '—', '—', s.cost > 0 ? fmt(s.cost) : 'Included']);
+    });
+  }
+
   // Add-on rows
   if (params.includeAdditional) {
     if (params.extraPlates > 0) {
@@ -449,6 +467,62 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
   });
 
   Y = (doc as any).lastAutoTable.finalY + 8;
+
+  // ── Meal Schedule (Multi-Day) ────────────────────────────────────────────
+  if (booking.eventType === 'Multi-Day' && booking.mealMenus) {
+    const MEALS = ['Breakfast', 'Lunch', 'High Tea', 'Dinner'];
+    const activeMeals = MEALS.filter(m => {
+      const sec = (booking.mealMenus!)[m];
+      if (!sec) return false;
+      const dishCount = Object.values(sec.dishes).reduce((n, arr) => n + arr.length, 0);
+      return dishCount > 0 || (sec.guestCount ?? 0) > 0 || !!sec.venue;
+    });
+
+    if (activeMeals.length > 0) {
+      doc.setDrawColor(220, 228, 240);
+      doc.setLineWidth(0.5);
+      doc.line(14, Y, 196, Y);
+      Y += 5;
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NAVY_RGB);
+      doc.text('MEAL SCHEDULE', 14, Y);
+      Y += 5;
+
+      const mealRows: string[][] = [];
+      activeMeals.forEach(m => {
+        const sec = (booking.mealMenus!)[m]!;
+        const dishList = Object.entries(sec.dishes)
+          .filter(([, d]) => d.length > 0)
+          .map(([, d]) => d.join(', '))
+          .join(' | ');
+        mealRows.push([
+          m,
+          sec.venue || '—',
+          sec.guestCount ? String(sec.guestCount) : '—',
+          dishList || '—',
+        ]);
+      });
+
+      autoTable(doc, {
+        startY: Y,
+        head: [['Meal', 'Venue', 'Guests', 'Dishes']],
+        body: mealRows,
+        theme: 'grid',
+        headStyles: { fillColor: [10, 50, 100], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 8 },
+        bodyStyles: { fontSize: 7.5, textColor: [20, 35, 60] },
+        columnStyles: {
+          0: { cellWidth: 22 },
+          1: { cellWidth: 38 },
+          2: { cellWidth: 18, halign: 'center' },
+          3: { cellWidth: 104 },
+        },
+        margin: { left: 14, right: 14 },
+      });
+      Y = (doc as any).lastAutoTable.finalY + 6;
+    }
+  }
 
   // ── Notes / Custom Description ─────────────────────────────────────────────
   if (params.customDescription && params.customDescription.trim()) {

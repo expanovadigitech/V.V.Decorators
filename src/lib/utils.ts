@@ -11,7 +11,12 @@ export function computeBooking(
   const baseValue = (partial.guestCount || 0) * (partial.perPlateCost || 0);
   const roomValue = (partial.roomsRequired || 0) * (partial.roomCost || 0);
   const addValue  = (partial.additionalServices || []).reduce((sum, s) => sum + (Number(s.cost) || 0), 0);
-  const totalEventValue = baseValue + roomValue + addValue;
+  const computedTotal = baseValue + roomValue + addValue;
+  // Allow manual override of total — if overrideTotalAmount is set use it,
+  // but only when the computed total is 0 (i.e. no line items filled in)
+  const totalEventValue = (partial.overrideTotalAmount != null && partial.overrideTotalAmount > 0)
+    ? partial.overrideTotalAmount
+    : computedTotal;
   const balanceAmount = totalEventValue - (partial.advancePaid || 0);
   return { ...partial, totalEventValue, balanceAmount } as Booking;
 }
@@ -117,7 +122,10 @@ export function filterBookings(
       (b) =>
         b.clientName.toLowerCase().includes(q) ||
         b.primaryPhone.includes(q) ||
-        b.alternativePhone.includes(q)
+        b.alternativePhone.includes(q) ||
+        b.eventDate.includes(q) ||
+        (b.eventEndDate || '').includes(q) ||
+        formatDate(b.eventDate).toLowerCase().includes(q)
     );
   }
 

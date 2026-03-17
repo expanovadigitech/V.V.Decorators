@@ -106,6 +106,13 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
     if (errors[key]) setErrors(e => ({ ...e, [key]: '' }));
   }
 
+  // ── Multi-Day Meal venue helper ────────────────────────────────────────────
+  function setMealVenue(meal: string, venue: string) {
+    const menus = { ...getMealMenus() };
+    menus[meal] = { ...(menus[meal] || createEmptyMealSection()), venue };
+    setField('mealMenus', menus);
+  }
+
   // ── Days Overview ──────────────────────────────────────────────────────────
   function addDayOverview() {
     const current = form.daysOverview || [];
@@ -191,20 +198,20 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
     setMealCustomDish(prev => ({ ...prev, [meal]: '' }));
   }
 
-  // ── Validate ───────────────────────────────────────────────────────────────
+  // ── Validate (flexible — only block obvious errors) ──────────────────────────
   function validate(): boolean {
     const e: Record<string, string> = {};
-    if (!form.clientName.trim()) e.clientName = 'Client name is required';
-    if (!form.eventDate)         e.eventDate  = 'Event date is required';
-    if (form.eventType === 'Multi-Day' && !form.eventEndDate) e.eventEndDate = 'End date required';
-    if (!form.venue.trim())      e.venue      = 'Venue is required';
-    if (!validatePhone(form.primaryPhone))   e.primaryPhone    = 'Enter a valid 10-digit phone';
-    if (form.alternativePhone && !validatePhone(form.alternativePhone)) e.alternativePhone = 'Invalid phone';
-    if (form.guestCount  < 0)    e.guestCount  = 'Must be 0 or more';
-    if (form.perPlateCost < 0)   e.perPlateCost = 'Must be 0 or more';
-    if (form.advancePaid  < 0)   e.advancePaid  = 'Must be 0 or more';
+    // Only validate negatives and conditional fields
+    if (form.guestCount  < 0)   e.guestCount  = 'Must be 0 or more';
+    if (form.perPlateCost < 0)  e.perPlateCost = 'Must be 0 or more';
+    if (form.advancePaid  < 0)  e.advancePaid  = 'Must be 0 or more';
     if (form.paymentMode === 'Cheque' && !form.chequeNumber?.trim()) e.chequeNumber = 'Cheque number required';
     if (form.timingCategory === 'Others' && !form.customTiming?.trim()) e.customTiming = 'Please specify timing';
+    if (form.eventType === 'Multi-Day' && form.eventDate && form.eventEndDate && form.eventEndDate < form.eventDate) {
+      e.eventEndDate = 'End date cannot be before start date';
+    }
+    if (form.primaryPhone && !/^\d{10}$/.test(form.primaryPhone)) e.primaryPhone = 'Enter a valid 10-digit phone';
+    if (form.alternativePhone && !/^\d{10}$/.test(form.alternativePhone)) e.alternativePhone = 'Invalid phone';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -420,11 +427,28 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                 {errors.perPlateCost && <span className="error-msg">{errors.perPlateCost}</span>}
               </div>
 
-              {/* Total Event Value */}
+              {/* Total Event Value — editable override */}
               <div className="field-group computed-field">
-                <label className="field-label">Total Event Value</label>
-                <div className="computed-display">{formatCurrency(form.totalEventValue)}</div>
-                <span className="computed-hint">Guests × Per Plate</span>
+                <label className="field-label">Total Amount (₹)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.overrideTotalAmount != null ? form.overrideTotalAmount : (form.totalEventValue || '')}
+                  onChange={e => {
+                    const val = parseFloat(e.target.value) || 0;
+                    setForm(prev => {
+                      const updated = { ...prev, overrideTotalAmount: val };
+                      return computeBooking({ ...updated, updatedAt: new Date().toISOString() });
+                    });
+                  }}
+                  placeholder="Auto-calculated or enter manually"
+                  className="field-input"
+                />
+                <span className="computed-hint">
+                  {form.guestCount && form.perPlateCost
+                    ? `${form.guestCount} guests × ₹${form.perPlateCost} = auto`
+                    : 'Enter manually if no per-plate pricing'}
+                </span>
               </div>
 
               {/* Advance Paid */}
@@ -610,6 +634,20 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
 
                         {isOpen && (
                           <div className="meal-accordion-body">
+                            {/* Per-meal venue */}
+                            <div className="field-group full-width" style={{ marginBottom: '0.75rem' }}>
+                              <label className="field-label" style={{ marginBottom: '0.35rem', display: 'block' }}>
+                                Venue for {meal}
+                              </label>
+                              <input
+                                type="text"
+                                value={section.venue || ''}
+                                onChange={e => setMealVenue(meal, e.target.value)}
+                                placeholder={`e.g. Poolside Hall, Banquet Room A…`}
+                                className="field-input"
+                              />
+                            </div>
+
                             {cats.map(cat => {
                               const filteredDishes = (STANDARD_DISHES[cat] || []).filter(d => d.toLowerCase().includes(menuSearch.toLowerCase()));
                               const customDishes = (section.dishes[cat] || []).filter(d => !(STANDARD_DISHES[cat] || []).includes(d)).filter(d => d.toLowerCase().includes(menuSearch.toLowerCase()));
