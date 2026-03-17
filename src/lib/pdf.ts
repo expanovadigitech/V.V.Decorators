@@ -335,7 +335,7 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
         if (base > 0 && rate > 0) {
           body.push([
             day.date || `Day ${day.day}`,
-            `${m} (Base Guests)`,
+            `${m} (Guest Count)`,
             entry.venue || '—',
             String(base),
             fmt(rate),

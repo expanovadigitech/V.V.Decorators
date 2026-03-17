@@ -153,6 +153,7 @@ export default function InvoiceModal({ booking, onClose, onGenerate }: Props) {
                     type="number"
                     min={0}
                     value={extraPlates || ''}
+                    onWheel={e => e.currentTarget.blur()}
                     onChange={e => setExtraPlates(parseInt(e.target.value) || 0)}
                     placeholder="e.g. 20"
                     className="field-input"
@@ -184,6 +185,7 @@ export default function InvoiceModal({ booking, onClose, onGenerate }: Props) {
                           type="number"
                           min={0}
                           value={charge.amount || ''}
+                          onWheel={e => e.currentTarget.blur()}
                           onChange={e => {
                             const list = [...miscCharges];
                             list[idx].amount = parseFloat(e.target.value) || 0;
@@ -209,6 +211,7 @@ export default function InvoiceModal({ booking, onClose, onGenerate }: Props) {
                     type="number"
                     min={0}
                     value={discount || ''}
+                    onWheel={e => e.currentTarget.blur()}
                     onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
                     placeholder="e.g. 2000"
                     className="field-input"

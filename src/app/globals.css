@@ -845,18 +845,31 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 .field-input {
-  padding: 0.6rem 0.85rem;
+  padding: 0.65rem 0.85rem;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   font-size: 0.95rem;
+  line-height: 1.4;
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05); /* Works in both due to variable opacity */
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(4px);
   transition: var(--transition);
   outline: none;
   width: 100%;
-  min-height: 44px;
+  min-height: 46px;
 }
+
+/* Hide Spinners in number inputs */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 [data-theme='light'] .field-input {
   background: #ffffff; /* Explicit true white in light mode */
 }
@@ -945,14 +958,15 @@ img { max-width: 100%; height: auto; display: block; }
 
 /* Computed fields */
 .computed-display {
-  padding: 0.6rem 0.85rem;
+  padding: 0.65rem 0.85rem;
   background: rgba(255,255,255,0.05);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   font-size: 1rem;
+  line-height: 1.4;
   font-weight: 700;
   color: var(--text-primary);
-  min-height: 44px;
+  min-height: 46px;
   display: flex;
   align-items: center;
 }

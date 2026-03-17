@@ -485,7 +485,9 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                   {/* Guest Count */}
                   <div className="field-group">
                     <label className="field-label">Total Guests</label>
-                    <input type="number" min={0} value={form.guestCount || ''} onChange={e => setField('guestCount', parseInt(e.target.value) || 0)}
+                    <input type="number" min={0} value={form.guestCount || ''} 
+                      onWheel={e => e.currentTarget.blur()}
+                      onChange={e => setField('guestCount', parseInt(e.target.value) || 0)}
                       placeholder="e.g. 250" className={`field-input ${errors.guestCount ? 'input-error' : ''}`} />
                     {errors.guestCount && <span className="error-msg">{errors.guestCount}</span>}
                   </div>
@@ -493,7 +495,9 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                   {/* Per Plate Cost */}
                   <div className="field-group">
                     <label className="field-label">Per Plate Cost (₹)</label>
-                    <input type="number" min={0} value={form.perPlateCost || ''} onChange={e => setField('perPlateCost', parseFloat(e.target.value) || 0)}
+                    <input type="number" min={0} value={form.perPlateCost || ''} 
+                      onWheel={e => e.currentTarget.blur()}
+                      onChange={e => setField('perPlateCost', parseFloat(e.target.value) || 0)}
                       placeholder="e.g. 850" className={`field-input ${errors.perPlateCost ? 'input-error' : ''}`} />
                     {errors.perPlateCost && <span className="error-msg">{errors.perPlateCost}</span>}
                   </div>
@@ -507,6 +511,7 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                   type="number"
                   min={0}
                   value={form.overrideTotalAmount != null ? form.overrideTotalAmount : (form.totalEventValue || '')}
+                  onWheel={e => e.currentTarget.blur()}
                   onChange={e => {
                     const val = parseFloat(e.target.value) || 0;
                     setForm(prev => {
@@ -530,7 +535,9 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
               {/* Advance Paid */}
               <div className="field-group">
                 <label className="field-label">Advance Paid (₹)</label>
-                <input type="number" min={0} value={form.advancePaid || ''} onChange={e => setField('advancePaid', parseFloat(e.target.value) || 0)}
+                <input type="number" min={0} value={form.advancePaid || ''} 
+                  onWheel={e => e.currentTarget.blur()}
+                  onChange={e => setField('advancePaid', parseFloat(e.target.value) || 0)}
                   placeholder="e.g. 50000" className={`field-input ${errors.advancePaid ? 'input-error' : ''}`} />
                 {errors.advancePaid && <span className="error-msg">{errors.advancePaid}</span>}
               </div>
@@ -584,9 +591,13 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
               <div className="field-group">
                 <label className="field-label"><BedDouble size={14} style={{ display: 'inline', marginRight: 5 }} />Rooms Required</label>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input type="number" min={0} value={form.roomsRequired || ''} onChange={e => setField('roomsRequired', parseInt(e.target.value) || 0)}
+                  <input type="number" min={0} value={form.roomsRequired || ''} 
+                    onWheel={e => e.currentTarget.blur()}
+                    onChange={e => setField('roomsRequired', parseInt(e.target.value) || 0)}
                     placeholder="Count" className="field-input" style={{ width: '40%' }} />
-                  <input type="number" min={0} value={form.roomCost || ''} onChange={e => setField('roomCost', parseInt(e.target.value) || 0)}
+                  <input type="number" min={0} value={form.roomCost || ''} 
+                    onWheel={e => e.currentTarget.blur()}
+                    onChange={e => setField('roomCost', parseInt(e.target.value) || 0)}
                     placeholder="Rate (₹)" className="field-input" style={{ width: '60%' }} />
                 </div>
               </div>
@@ -607,6 +618,7 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                     <input type="text" placeholder="Service Name (e.g. Generator)" value={service.name}
                       onChange={e => updateAdditionalService(service.id, 'name', e.target.value)} className="field-input" style={{ flex: 2 }} />
                     <input type="number" placeholder="Cost (₹)" value={service.cost || ''}
+                      onWheel={e => e.currentTarget.blur()}
                       onChange={e => updateAdditionalService(service.id, 'cost', parseInt(e.target.value) || 0)} className="field-input" style={{ flex: 1 }} />
                     <button type="button" onClick={() => removeAdditionalService(service.id)} className="btn-secondary" style={{ color: 'var(--status-cancelled)', padding: '0.4rem' }}>
                       <Trash2 size={16} />
@@ -733,16 +745,25 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                                       <h4 className="meal-cat-title" style={{ color: 'var(--gold)', fontSize: '1.05rem', margin: 0 }}>{meal}</h4>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Base</label>
-                                          <input type="number" min={0} value={entry.guestCount || ''} onChange={e => updateMealEntry(dayIdx, meal, 'guestCount', parseInt(e.target.value) || 0)} className="field-input" style={{ width: '50px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
+                                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Guest Count</label>
+                                          <input type="number" min={0} value={entry.guestCount || ''} 
+                                            onWheel={e => e.currentTarget.blur()}
+                                            onChange={e => updateMealEntry(dayIdx, meal, 'guestCount', parseInt(e.target.value) || 0)} 
+                                            className="field-input" style={{ width: '65px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                           <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Extra</label>
-                                          <input type="number" min={0} value={entry.extraPlatesCount || ''} onChange={e => updateMealEntry(dayIdx, meal, 'extraPlatesCount', parseInt(e.target.value) || 0)} className="field-input" style={{ width: '50px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
+                                          <input type="number" min={0} value={entry.extraPlatesCount || ''} 
+                                            onWheel={e => e.currentTarget.blur()}
+                                            onChange={e => updateMealEntry(dayIdx, meal, 'extraPlatesCount', parseInt(e.target.value) || 0)} 
+                                            className="field-input" style={{ width: '60px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                           <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Rate</label>
-                                          <input type="number" min={0} value={entry.pricePerPlate || ''} onChange={e => updateMealEntry(dayIdx, meal, 'pricePerPlate', parseInt(e.target.value) || 0)} className="field-input" style={{ width: '70px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
+                                          <input type="number" min={0} value={entry.pricePerPlate || ''} 
+                                            onWheel={e => e.currentTarget.blur()}
+                                            onChange={e => updateMealEntry(dayIdx, meal, 'pricePerPlate', parseInt(e.target.value) || 0)} 
+                                            className="field-input" style={{ width: '75px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
                                         </div>
                                     </div>
                                     
