@@ -66,9 +66,26 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
   const [form, setForm] = useState<Booking>(() => {
     const empty = createEmptyBooking();
     if (booking) {
+      // Normalize dayMeals to ensure new fields like extraPlatesCount are present
+      const normalizedDayMeals = (booking.dayMeals || []).map(dm => ({
+        ...dm,
+        meals: Object.entries(dm.meals || {}).reduce((acc, [type, meal]) => {
+          acc[type as MealType] = {
+            ...meal,
+            extraPlatesCount: meal.extraPlatesCount ?? 0,
+            guestCount: meal.guestCount ?? 0,
+            pricePerPlate: meal.pricePerPlate ?? 0,
+            dishes: Array.isArray(meal.dishes) ? meal.dishes : [],
+            venue: meal.venue || ''
+          };
+          return acc;
+        }, {} as Record<MealType, any>)
+      }));
+
       return {
         ...empty,
         ...booking,
+        dayMeals:    normalizedDayMeals.length > 0 ? normalizedDayMeals : empty.dayMeals,
         menuItems:   booking.menuItems  || empty.menuItems,
         mealMenus:   booking.mealMenus  || createEmptyMealMenus(),
         eventType:   booking.eventType  || 'Single Day',
@@ -76,13 +93,12 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
         daysOverview:   booking.daysOverview   || [],
         roomsRequired:  booking.roomsRequired  || 0,
         swimmingPool:   booking.swimmingPool   || false,
-        additionalServices: booking.additionalServices || '',
+        additionalServices: booking.additionalServices || [],
         id:             booking.id,
         createdAt:      booking.createdAt,
         updatedAt:      booking.updatedAt,
         totalEventValue: booking.totalEventValue,
         balanceAmount:   booking.balanceAmount,
-        // migrate old status values to Active
         status: (booking.status === 'Trashed' ? 'Trashed' : booking.status === 'Done' ? 'Done' : 'Active'),
       } as Booking;
     }
@@ -239,13 +255,19 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
     if (final.timingCategory !== 'Others') final.customTiming = '';
     if (final.venue && !venues.includes(form.venue)) saveVenue(form.venue);
     
-    // Save pricing breakdown specifically for multi-day
+    // Save breakdown & details specifically for multi-day
     if (final.eventType === 'Multi-Day') {
-      const breakdown: any[] = [];
+      const pricingBreakdown: any[] = [];
+      const mealMenusBreakdown: any[] = [];
+
       (final.dayMeals || []).forEach(day => {
         const dayPrices: any = { day: day.day, date: day.date, meals: {} };
+        const dayMenus:  any = { day: day.day, meals: {} };
+
         Object.entries(day.meals).forEach(([mType, entry]) => {
           const totalGuests = (entry.guestCount || 0) + (entry.extraPlatesCount || 0);
+          
+          // Pricing Logic
           dayPrices.meals[mType] = {
             base: entry.guestCount || 0,
             extra: entry.extraPlatesCount || 0,
@@ -253,10 +275,20 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
             rate: entry.pricePerPlate || 0,
             amount: totalGuests * (entry.pricePerPlate || 0)
           };
+
+          // Dish/Venue Logic
+          dayMenus.meals[mType] = {
+            venue: entry.venue || '',
+            dishes: entry.dishes || []
+          };
         });
-        breakdown.push(dayPrices);
+
+        pricingBreakdown.push(dayPrices);
+        mealMenusBreakdown.push(dayMenus);
       });
-      final.multiDayPricing = breakdown;
+
+      final.multiDayPricing = pricingBreakdown;
+      final.mealMenus = mealMenusBreakdown as any;
     }
 
     onSave(final);

@@ -225,8 +225,12 @@ export function generateKitchenPDF(booking: Booking) {
         const extraQty = entry.extraPlatesCount || 0;
         const totalQty = baseQty + extraQty;
         
-        const qtyStr = `TOTAL QUANTITY: ${totalQty} (${baseQty} Base + ${extraQty} Extra)`;
-        doc.text(`${meal.toUpperCase()} — ${qtyStr} ${entry.venue ? ` | Venue: ${entry.venue}` : ''}`, MARGIN, currentY + 4);
+        // Use a more readable format for the chefs
+        const qtyLabel = `QTY: ${totalQty}`;
+        const venueLabel = entry.venue ? `[${entry.venue.toUpperCase()}]` : '';
+        const detailLabel = `(${baseQty} Base + ${extraQty} Extra)`;
+        
+        doc.text(`${meal.toUpperCase()}  —  ${qtyLabel} ${detailLabel}   ${venueLabel}`, MARGIN, currentY + 4);
         currentY += 6;
 
         // Grid renderer
@@ -325,19 +329,28 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
         if (!entry) return;
         const base = entry.guestCount || 0;
         const extra = entry.extraPlatesCount || 0;
-        const total = base + extra;
         const rate = entry.pricePerPlate || 0;
         
-        if (total > 0 && rate > 0) {
-          const mTotal = total * rate;
-          const desc = extra > 0 ? `${m} (${base} Base + ${extra} Extra)` : m;
+        // Separate line items as requested for better billing clarity
+        if (base > 0 && rate > 0) {
           body.push([
             day.date || `Day ${day.day}`,
-            desc,
+            `${m} (Base Guests)`,
             entry.venue || '—',
-            String(total),
+            String(base),
             fmt(rate),
-            fmt(mTotal),
+            fmt(base * rate),
+          ]);
+        }
+        
+        if (extra > 0 && rate > 0) {
+          body.push([
+            '—', // Repeat date or use spacer
+            `${m} (Extra Plates)`,
+            '—',
+            String(extra),
+            fmt(rate),
+            fmt(extra * rate),
           ]);
         }
       });

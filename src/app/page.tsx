@@ -114,7 +114,7 @@ export default function CRMPage() {
   async function handleRestore(id: string) {
     const b = bookings.find(x => x.id === id);
     if (!b) return;
-    setBookings(await updateBooking({ ...b, status: 'Active', trashedAt: undefined, updatedAt: new Date().toISOString() }));
+    setBookings(await updateBooking({ ...b, status: 'Active', trashedAt: null as any, updatedAt: new Date().toISOString() }));
     pushToast(`✓ "${b.clientName}" restored`);
   }
 
@@ -353,76 +353,116 @@ export default function CRMPage() {
               <button onClick={() => setViewMenuBooking(null)} className="modal-close-btn"><X size={20} /></button>
             </div>
 
-            <div className="quick-menu-tabs-content" style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
+            <div className="quick-menu-tabs-content" style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
               {viewMenuBooking.eventType === 'Multi-Day' ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                  {(viewMenuBooking.dayMeals || []).map((day, dIdx) => {
-                    const overview = viewMenuBooking.daysOverview?.find(o => o.day === day.day);
-                    return (
-                      <div key={dIdx} className="view-day-section">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '2px solid var(--gold)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                           <span style={{ background: 'var(--gold)', color: 'var(--surface)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }}>Day {day.day}</span>
-                           <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--gold)' }}>{overview?.label || 'Event Day'}</h4>
-                           <span style={{ marginLeft: 'auto', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{day.date}</span>
-                        </div>
+                  {/* Primary loop from daysOverview to maintain chronological order */}
+                  {(() => {
+                    const days = (viewMenuBooking.daysOverview && viewMenuBooking.daysOverview.length > 0)
+                      ? viewMenuBooking.daysOverview
+                      : (viewMenuBooking.dayMeals || []).map(dm => ({ day: dm.day, label: 'Event Day' }));
+
+                    return days.map((dayOverviewObj, dIdx) => {
+                      const dayNumber = dayOverviewObj.day;
+                      const dayLabel  = dayOverviewObj.label || 'Event Day';
+                      
+                      // Try to find pricing data and dish data for this specific day
+                      // Fallback to dayMeals if multiDayPricing/mealMenus aren't populated for older records
+                      const dayPricingData = (viewMenuBooking.multiDayPricing && Array.isArray(viewMenuBooking.multiDayPricing))
+                        ? viewMenuBooking.multiDayPricing.find((dp: any) => dp.day === dayNumber)
+                        : null;
                         
-                        <div className="table-wrapper" style={{ boxShadow: 'none', border: '1px solid rgba(255,255,255,0.05)' }}>
-                          <table className="bookings-table" style={{ fontSize: '0.85rem' }}>
-                            <thead>
-                              <tr>
-                                <th>Meal</th>
-                                <th>Venue</th>
-                                <th style={{ textAlign: 'center' }}>Total Guests</th>
-                                <th>Menu Items</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {Object.entries(day.meals).map(([mType, entry]) => {
-                                if (!entry.dishes.length && !entry.venue) return null;
-                                const pricing = viewMenuBooking.multiDayPricing?.[dIdx]?.meals?.[mType];
-                                return (
-                                  <tr key={mType}>
-                                    <td style={{ fontWeight: 'bold', color: 'var(--gold-dark)' }}>{mType}</td>
-                                    <td>{entry.venue || '—'}</td>
-                                    <td style={{ textAlign: 'center' }}>
-                                      {pricing ? (
-                                        <div title={`Base: ${pricing.base} + Extra: ${pricing.extra}`}>
-                                          {pricing.total}
+                      const mealsSource = (viewMenuBooking.dayMeals && Array.isArray(viewMenuBooking.dayMeals))
+                        ? viewMenuBooking.dayMeals.find((dm: any) => dm.day === dayNumber)
+                        : null;
+
+                      // If no pricing entry OR meals entry exists for this day, we still show the header but skip the table
+                      if (!dayPricingData && !mealsSource) return null;
+
+                      const dateStr = dayPricingData?.date || mealsSource?.date || '';
+
+                      return (
+                        <div key={dIdx} className="view-day-section">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '2px solid var(--gold)', paddingBottom: '0.6rem', marginBottom: '1.2rem' }}>
+                             <span style={{ background: 'var(--gold)', color: 'var(--surface)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.85rem' }}>Day {dayNumber}</span>
+                             <h4 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--gold)', fontWeight: '600' }}>{dayLabel}</h4>
+                             <span style={{ marginLeft: 'auto', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{dateStr}</span>
+                          </div>
+                          
+                          <div className="table-wrapper" style={{ boxShadow: 'none', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', overflow: 'hidden' }}>
+                            <table className="bookings-table" style={{ fontSize: '0.85rem', borderCollapse: 'collapse', width: '100%' }}>
+                              <thead style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                <tr>
+                                  <th style={{ textAlign: 'left', padding: '12px' }}>Meal Type</th>
+                                  <th style={{ textAlign: 'left', padding: '12px' }}>Venue</th>
+                                  <th style={{ textAlign: 'center', padding: '12px' }}>Base</th>
+                                  <th style={{ textAlign: 'center', padding: '12px' }}>Extra</th>
+                                  <th style={{ textAlign: 'center', padding: '12px' }}>Total</th>
+                                  <th style={{ textAlign: 'left', padding: '12px' }}>Menu / Dishes</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(['Breakfast', 'Lunch', 'High Tea', 'Dinner'] as const).map(mType => {
+                                  // Gather data from any available source
+                                  const menuEntry    = mealsSource?.meals?.[mType];
+                                  const pricingEntry = dayPricingData?.meals?.[mType];
+
+                                  const baseQty  = pricingEntry?.base   ?? menuEntry?.guestCount ?? 0;
+                                  const extraQty = pricingEntry?.extra  ?? menuEntry?.extraPlatesCount ?? 0;
+                                  const totalQty = pricingEntry?.total  ?? (baseQty + extraQty);
+                                  const venue    = menuEntry?.venue     || '—';
+                                  const dishes   = menuEntry?.dishes    || [];
+
+                                  if (dishes.length === 0 && venue === '—' && totalQty === 0) return null;
+
+                                  return (
+                                    <tr key={mType} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                      <td style={{ fontWeight: '600', color: 'var(--gold-dark)', padding: '12px' }}>{mType}</td>
+                                      <td style={{ padding: '12px' }}>{venue}</td>
+                                      <td style={{ textAlign: 'center', padding: '12px' }}>{baseQty}</td>
+                                      <td style={{ textAlign: 'center', padding: '12px', color: extraQty > 0 ? 'var(--gold)' : 'inherit' }}>{extraQty}</td>
+                                      <td style={{ textAlign: 'center', padding: '12px', fontWeight: 'bold' }}>{totalQty}</td>
+                                      <td style={{ padding: '12px' }}>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                                          {dishes.length > 0 ? dishes.map((dish, i) => (
+                                            <span key={i} style={{ background: 'rgba(212,175,55,0.1)', color: 'var(--text-primary)', border: '1px solid rgba(212,175,55,0.2)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem' }}>
+                                              {dish}
+                                            </span>
+                                          )) : <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No menu selected</span>}
                                         </div>
-                                      ) : (
-                                        (entry.guestCount || 0) + (entry.extraPlatesCount || 0)
-                                      )}
-                                    </td>
-                                    <td>
-                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                                        {entry.dishes.map((dish, i) => (
-                                          <span key={i} style={{ background: 'rgba(212,175,55,0.1)', padding: '2px 6px', borderRadius: '3px', fontSize: '0.75rem' }}>{dish}</span>
-                                        ))}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               ) : (
                 <div className="quick-menu-list">
                   {(!viewMenuBooking.menuItems || Object.keys(viewMenuBooking.menuItems).length === 0) ? (
-                    <p className="confirm-desc">No menu items selected.</p>
+                    <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary)' }}>
+                      <p>No menu items have been selected for this single-day event.</p>
+                    </div>
                   ) : (
                     Object.entries(viewMenuBooking.menuItems).map(([category, dishes]) => {
                       if (!dishes || dishes.length === 0) return null;
                       return (
-                        <div key={category} className="quick-menu-category">
-                          <h4 className="quick-category-title" style={{ fontSize: '0.9rem', color: 'var(--gold-dark)', marginBottom: '0.4rem', marginTop: '0.8rem' }}>{category.toUpperCase()}</h4>
-                          <ul style={{ listStyleType: 'disc', paddingLeft: '1.2rem', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-                            {Array.isArray(dishes) ? dishes.map((dish, i) => <li key={i}>{String(dish)}</li>) : <li>{String(dishes)}</li>}
-                          </ul>
+                        <div key={category} className="quick-menu-category" style={{ marginBottom: '1.5rem' }}>
+                          <h4 className="quick-category-title" style={{ fontSize: '0.95rem', color: 'var(--gold)', marginBottom: '0.6rem', borderBottom: '1px solid rgba(212,175,55,0.15)', paddingBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {category}
+                          </h4>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            {Array.isArray(dishes) ? dishes.map((dish, i) => (
+                              <span key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem' }}>
+                                {String(dish)}
+                              </span>
+                            )) : <span style={{ fontSize: '0.85rem' }}>{String(dishes)}</span>}
+                          </div>
                         </div>
                       );
                     })
