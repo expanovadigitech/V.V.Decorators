@@ -166,10 +166,10 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
       date: '',
       venue: '',
       meals: {
-        'Breakfast': { venue: '', dishes: [] },
-        'Lunch': { venue: '', dishes: [] },
-        'High Tea': { venue: '', dishes: [] },
-        'Dinner': { venue: '', dishes: [] }
+        'Breakfast': { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
+        'Lunch':     { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
+        'High Tea':  { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
+        'Dinner':    { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 }
       }
     });
     setField('dayMeals', arr);
@@ -669,7 +669,19 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                                 return (
                                   <div key={meal} className="day-meal-section" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     
-                                    <h4 className="meal-cat-title" style={{ color: 'var(--gold)', fontSize: '1.05rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>{meal}</h4>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                                      <h4 className="meal-cat-title" style={{ color: 'var(--gold)', fontSize: '1.05rem', margin: 0 }}>{meal}</h4>
+                                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Guests</label>
+                                          <input type="number" min={0} value={entry.guestCount || ''} onChange={e => updateMealEntry(dayIdx, meal, 'guestCount', parseInt(e.target.value) || 0)} className="field-input" style={{ width: '60px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Rate (₹)</label>
+                                          <input type="number" min={0} value={entry.pricePerPlate || ''} onChange={e => updateMealEntry(dayIdx, meal, 'pricePerPlate', parseInt(e.target.value) || 0)} className="field-input" style={{ width: '80px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
+                                        </div>
+                                      </div>
+                                    </div>
                                     
                                     <div className="field-group full-width" style={{ marginBottom: '1rem' }}>
                                       <label className="field-label" style={{ marginBottom: '0.35rem' }}>Venue for {meal}</label>
@@ -739,6 +751,16 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                       </div>
                     );
                   })}
+
+                  {/* Multi-Day Extra Charges */}
+                  <div className="field-group full-width" style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <label className="field-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Wrench size={14} />
+                      Meal/Itinerary Extra Charges (₹)
+                    </label>
+                    <p className="meal-planner-hint" style={{ marginTop: '-0.25rem', marginBottom: '0.75rem' }}>Miscellaneous Multi-Day costs added to total event value</p>
+                    <input type="number" min={0} value={form.multiDayExtraCharges || ''} onChange={e => setField('multiDayExtraCharges', parseInt(e.target.value) || 0)} className="field-input" placeholder="e.g. 15000" style={{ maxWidth: '200px' }} />
+                  </div>
                 </div>
               )}
             </>

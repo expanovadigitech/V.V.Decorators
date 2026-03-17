@@ -8,7 +8,22 @@ export function generateId(): string {
 export function computeBooking(
   partial: Omit<Booking, 'totalEventValue' | 'balanceAmount'>
 ): Booking {
-  const baseValue = (partial.guestCount || 0) * (partial.perPlateCost || 0);
+  let baseValue = 0;
+
+  if (partial.eventType === 'Multi-Day') {
+    let mealTotal = 0;
+    (partial.dayMeals || []).forEach(day => {
+      Object.values(day.meals).forEach(meal => {
+        const guests = meal.guestCount || 0;
+        const rate = meal.pricePerPlate || 0;
+        mealTotal += guests * rate;
+      });
+    });
+    baseValue = mealTotal + (partial.multiDayExtraCharges || 0);
+  } else {
+    baseValue = (partial.guestCount || 0) * (partial.perPlateCost || 0);
+  }
+
   const roomValue = (partial.roomsRequired || 0) * (partial.roomCost || 0);
   const addValue  = (partial.additionalServices || []).reduce((sum, s) => sum + (Number(s.cost) || 0), 0);
   const computedTotal = baseValue + roomValue + addValue;
@@ -51,10 +66,10 @@ export function createEmptyDayMeal(dayNum: number): DayMeal {
     date: '',
     venue: '',
     meals: {
-      'Breakfast': { venue: '', dishes: [] },
-      'Lunch': { venue: '', dishes: [] },
-      'High Tea': { venue: '', dishes: [] },
-      'Dinner': { venue: '', dishes: [] }
+      'Breakfast': { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
+      'Lunch': { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
+      'High Tea': { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
+      'Dinner': { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 }
     }
   };
 }
@@ -96,6 +111,7 @@ export function createEmptyBooking(): Omit<Booking, 'id' | 'createdAt' | 'update
     roomCost: 0,
     swimmingPool: false,
     additionalServices: [],
+    multiDayExtraCharges: 0,
   };
 }
 

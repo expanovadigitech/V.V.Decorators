@@ -8,6 +8,8 @@ export type MealType       = 'Breakfast' | 'Lunch' | 'High Tea' | 'Dinner';
 export interface MealEntry {
   venue: string;
   dishes: string[]; // flat tag list
+  guestCount?: number;
+  pricePerPlate?: number;
 }
 
 // ── A single day in a multi-day event ────────────────────────────────────────
@@ -59,6 +61,7 @@ export interface Booking {
   perPlateCost: number;
   totalEventValue: number;
   overrideTotalAmount?: number;
+  multiDayExtraCharges?: number;
   advancePaid: number;
   paymentMode: 'Cash' | 'UPI' | 'Cheque' | 'Bank Transfer';
   chequeNumber?: string;

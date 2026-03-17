@@ -334,59 +334,153 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
   type TableBody = (string | number)[][];
   const body: TableBody = [];
 
-  // Primary service row
-  body.push([
-    'Catering & Decor Services',
-    fmt(booking.perPlateCost),
-    String(booking.guestCount),
-    fmt(booking.totalEventValue),
-  ]);
+  const isMultiDay = booking.eventType === 'Multi-Day';
 
-  // Rooms row
-  if ((booking.roomsRequired ?? 0) > 0) {
-    const roomTotal = (booking.roomsRequired ?? 0) * (booking.roomCost ?? 0);
-    body.push([
-      `Room Accommodation (${booking.roomsRequired} room${(booking.roomsRequired ?? 0) > 1 ? 's' : ''})`,
-      booking.roomCost ? fmt(booking.roomCost) : '—',
-      String(booking.roomsRequired),
-      roomTotal > 0 ? fmt(roomTotal) : 'Included',
-    ]);
-  }
-
-  // Additional services rows
-  if (booking.additionalServices && booking.additionalServices.length > 0) {
-    booking.additionalServices.filter(s => s.name).forEach(s => {
-      body.push([s.name, '—', '—', s.cost > 0 ? fmt(s.cost) : 'Included']);
-    });
-  }
-
-  // Add-on rows
-  if (params.includeAdditional) {
-    if (params.extraPlates > 0) {
-      body.push([
-        'Additional Plates',
-        fmt(booking.perPlateCost),
-        String(params.extraPlates),
-        fmt(params.extraPlatesValue),
-      ]);
-    }
-    if (params.miscCharges && params.miscCharges.length > 0) {
-      params.miscCharges.forEach(charge => {
-        if (charge.amount > 0) {
+  // Primary service row(s)
+  if (isMultiDay) {
+    (booking.dayMeals || []).forEach(day => {
+      const meals = ['Breakfast', 'Lunch', 'High Tea', 'Dinner'] as const;
+      meals.forEach(m => {
+        const entry = day.meals[m];
+        if (!entry) return;
+        const guests = entry.guestCount || 0;
+        const rate   = entry.pricePerPlate || 0;
+        if (guests > 0 && rate > 0) {
+          const mTotal = guests * rate;
           body.push([
-            charge.desc || 'Miscellaneous Charge',
-            '—',
-            '—',
-            fmt(charge.amount),
+            day.date || `Day ${day.day}`,
+            m,
+            entry.venue || '—',
+            String(guests),
+            fmt(rate),
+            fmt(mTotal),
           ]);
         }
       });
+    });
+
+    if (booking.multiDayExtraCharges && booking.multiDayExtraCharges > 0) {
+      body.push([
+        '—',
+        'Extra Charges',
+        'Miscellaneous',
+        '—',
+        '—',
+        fmt(booking.multiDayExtraCharges),
+      ]);
+    }
+
+    // Rooms row (6 columns)
+    if ((booking.roomsRequired ?? 0) > 0) {
+      const roomTotal = (booking.roomsRequired ?? 0) * (booking.roomCost ?? 0);
+      body.push([
+        '—',
+        `Accommodation`,
+        `${booking.roomsRequired} rooms`,
+        String(booking.roomsRequired),
+        booking.roomCost ? fmt(booking.roomCost) : '—',
+        roomTotal > 0 ? fmt(roomTotal) : 'Included',
+      ]);
+    }
+
+    // Additional services (6 columns)
+    if (booking.additionalServices && booking.additionalServices.length > 0) {
+      booking.additionalServices.filter(s => s.name).forEach(s => {
+        body.push(['—', s.name, 'Service', '—', '—', s.cost > 0 ? fmt(s.cost) : 'Included']);
+      });
+    }
+
+    // Add-ons (6 columns)
+    if (params.includeAdditional) {
+      if (params.extraPlates > 0) {
+        body.push([
+          '—',
+          'Additional Plates',
+          'Extra',
+          String(params.extraPlates),
+          fmt(booking.perPlateCost || 0),
+          fmt(params.extraPlatesValue),
+        ]);
+      }
+      if (params.miscCharges) {
+        params.miscCharges.forEach(charge => {
+          if (charge.amount > 0) {
+            body.push(['—', charge.desc || 'MISC', 'Charge', '—', '—', fmt(charge.amount)]);
+          }
+        });
+      }
+    }
+
+  } else {
+    // SINGLE DAY: 4 columns [Description, Unit Rate, Qty, Amount]
+    body.push([
+      'Catering & Decor Services',
+      fmt(booking.perPlateCost),
+      String(booking.guestCount),
+      fmt(booking.perPlateCost * booking.guestCount),
+    ]);
+
+    // Rooms row
+    if ((booking.roomsRequired ?? 0) > 0) {
+      const roomTotal = (booking.roomsRequired ?? 0) * (booking.roomCost ?? 0);
+      body.push([
+        `Room Accommodation (${booking.roomsRequired} rooms)`,
+        booking.roomCost ? fmt(booking.roomCost) : '—',
+        String(booking.roomsRequired),
+        roomTotal > 0 ? fmt(roomTotal) : 'Included',
+      ]);
+    }
+
+    // Additional services
+    if (booking.additionalServices && booking.additionalServices.length > 0) {
+      booking.additionalServices.filter(s => s.name).forEach(s => {
+        body.push([s.name, '—', '—', s.cost > 0 ? fmt(s.cost) : 'Included']);
+      });
+    }
+
+    // Add-on rows
+    if (params.includeAdditional) {
+      if (params.extraPlates > 0) {
+        body.push([
+          'Additional Plates',
+          fmt(booking.perPlateCost),
+          String(params.extraPlates),
+          fmt(params.extraPlatesValue),
+        ]);
+      }
+      if (params.miscCharges && params.miscCharges.length > 0) {
+        params.miscCharges.forEach(charge => {
+          if (charge.amount > 0) {
+            body.push([charge.desc || 'Miscellaneous Charge', '—', '—', fmt(charge.amount)]);
+          }
+        });
+      }
     }
   }
 
+  const tableHead = isMultiDay 
+    ? [['Date', 'Meal', 'Venue', 'Guests', 'Rate', 'Subtotal']]
+    : [['Description', 'Unit Rate', 'Qty', 'Amount']];
+
+  const columnStyles: any = isMultiDay 
+    ? {
+        0: { cellWidth: 25 }, // Date
+        1: { cellWidth: 25 }, // Meal
+        2: { cellWidth: 60 }, // Venue
+        3: { halign: 'center', cellWidth: 15 }, // Guests
+        4: { halign: 'right', cellWidth: 25 },  // Rate
+        5: { halign: 'right', cellWidth: 30, fontStyle: 'bold' }, // Subtotal
+      }
+    : {
+        0: { cellWidth: 85 },
+        1: { halign: 'right', cellWidth: 35 },
+        2: { halign: 'center', cellWidth: 20 },
+        3: { halign: 'right', cellWidth: 40, fontStyle: 'bold' },
+      };
+
   autoTable(doc, {
     startY: Y,
-    head: [['Description', 'Unit Rate', 'Qty', 'Amount']],
+    head: tableHead,
     body,
     theme: 'grid',
     headStyles: {
@@ -395,13 +489,8 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
       fontStyle: 'bold',
       fontSize: 9,
     },
-    bodyStyles: { fontSize: 9, textColor: [20, 35, 60] },
-    columnStyles: {
-      0: { cellWidth: 85 },
-      1: { halign: 'right', cellWidth: 35 },
-      2: { halign: 'center', cellWidth: 20 },
-      3: { halign: 'right', cellWidth: 40, fontStyle: 'bold' },
-    },
+    bodyStyles: { fontSize: 8, textColor: [20, 35, 60] },
+    columnStyles,
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 14, right: 14 },
   });
