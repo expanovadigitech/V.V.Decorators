@@ -17,7 +17,7 @@ import BookingModal from '@/components/BookingModal';
 import InvoiceModal, { InvoiceBillingParams } from '@/components/InvoiceModal';
 import Toast, { ToastMessage } from '@/components/Toast';
 import { Plus, Download, Flower2, Moon, Sun } from 'lucide-react';
-import { generateChefPDF, generateInvoicePDF } from '@/lib/pdf';
+import { generateKitchenPDF, generateInvoicePDF } from '@/lib/pdf';
 
 export default function CRMPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -289,7 +289,7 @@ export default function CRMPage() {
             onPermanentDelete={handlePermanentDeleteRequest}
             onAdd={() => setModal({ open: true, booking: null })}
             onViewMenu={(b) => setViewMenuBooking(b)}
-            onExportChef={(b) => { generateChefPDF(b); pushToast(`✓ Admin & Kitchen PDF for ${b.clientName}`); }}
+            onExportKitchen={(b) => { generateKitchenPDF(b); pushToast(`✓ Kitchen Menu exported for ${b.clientName}`); }}
             onExportInvoice={handleInvoiceRequest}
           />
         </div>

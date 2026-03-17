@@ -30,29 +30,24 @@ function getDateLine(booking: Booking): string {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-//  CHEF / KITCHEN ORDER PDF  —  Compact 3-column grid layout
+//  KITCHEN MENU / STAFF VIEW PDF  —  No prices, only logistics
 // ════════════════════════════════════════════════════════════════════════════
-export function generateChefPDF(booking: Booking) {
+export function generateKitchenPDF(booking: Booking) {
   const doc = new jsPDF();
 
   // ── Branded header bar ────────────────────────────────────────────────────
-  doc.setFillColor(0, 31, 63);
+  doc.setFillColor(...[0, 31, 63] as [number, number, number]);
   doc.rect(0, 0, 210, 28, 'F');
 
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(212, 175, 55);
-  doc.text('ADMIN & KITCHEN ORDER', 14, 11);
+  doc.text('KITCHEN MENU / STAFF SHEET', 14, 11);
 
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(255, 255, 255);
-  doc.text('V.V. DECORATORS — Production Sheet', 14, 18);
-
-  // Guest count badge (top-right)
-  doc.setFontSize(10);
-  doc.setTextColor(212, 175, 55);
-  doc.text(`${booking.guestCount} Guests`, 196, 11, { align: 'right' });
+  doc.text('V.V. DECORATORS — Internal Logistics', 14, 18);
 
   // Invoice-style date top-right
   doc.setFontSize(7.5);
@@ -86,11 +81,8 @@ export function generateChefPDF(booking: Booking) {
   doc.text('CONTACT', 14, 47);
   doc.text('TIMING', 80, 47);
 
-  // Accommodation label — only if rooms or pool
-  const hasAccommodation = (booking.roomsRequired ?? 0) > 0 || booking.swimmingPool;
-  if (hasAccommodation) {
-    doc.text('ACCOMMODATION', 155, 47);
-  }
+  // Private info hidden in Kitchen view
+  doc.text('STAFF NOTE', 155, 47);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(20, 35, 60);
@@ -99,32 +91,16 @@ export function generateChefPDF(booking: Booking) {
   const phoneStr = booking.primaryPhone + (booking.alternativePhone ? ` / ${booking.alternativePhone}` : '');
   doc.text(phoneStr, 14, 52);
   doc.text(getTimingLabel(booking), 80, 52);
-  if (hasAccommodation) {
-    const roomStr = (booking.roomsRequired ?? 0) > 0 ? `${booking.roomsRequired} Rooms` : '';
-    const poolStr = booking.swimmingPool ? 'Pool: Yes' : '';
-    doc.text([roomStr, poolStr].filter(Boolean).join('  |  '), 155, 52);
-  }
+  doc.text('Professional Handling Required', 155, 52);
 
   let currentY = 60;
-
-  // ── Additional Services ─────────────────────────────────────────────────
-  if (booking.additionalServices && booking.additionalServices.length > 0) {
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 31, 63);
-    doc.text('Services:', 14, currentY);
-    doc.setFont('helvetica', 'normal');
-    const servStr = doc.splitTextToSize(booking.additionalServices.map(s => s.name).filter(Boolean).join('  |  '), 180);
-    doc.text(servStr, 30, currentY);
-    currentY += servStr.length * 4 + 3;
-  }
 
   // ── Days Overview & Notes ─────────────────────────────────────────────────
   if (booking.eventType === 'Multi-Day' && booking.daysOverview && booking.daysOverview.length > 0) {
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 31, 63);
-    doc.text('Days:', 14, currentY);
+    doc.text('Event Overview:', 14, currentY);
     doc.setFont('helvetica', 'normal');
     const ov = doc.splitTextToSize(booking.daysOverview.map(d => `Day ${d.day}: ${d.label}`).join('  |  '), 180);
     doc.text(ov, 30, currentY);
@@ -135,7 +111,7 @@ export function generateChefPDF(booking: Booking) {
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'italic');
     doc.setTextColor(100, 110, 130);
-    const noteLines = doc.splitTextToSize(`Notes: ${booking.notes}`, 180);
+    const noteLines = doc.splitTextToSize(`Special Instructions: ${booking.notes}`, 180);
     doc.text(noteLines, 14, currentY);
     doc.setFont('helvetica', 'normal');
     currentY += noteLines.length * 4 + 3;
@@ -244,10 +220,11 @@ export function generateChefPDF(booking: Booking) {
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(20, 120, 60);
-        doc.text(`${meal.toUpperCase()} ${entry.venue ? `— Venue: ${entry.venue}` : ''}`, MARGIN, currentY + 4);
+        const guestStr = entry.guestCount ? ` (${entry.guestCount} GUESTS)` : '';
+        doc.text(`${meal.toUpperCase()}${guestStr} ${entry.venue ? `— Venue: ${entry.venue}` : ''}`, MARGIN, currentY + 4);
         currentY += 6;
 
-        // Since it's a flat array, mock a category for the grid renderer
+        // Grid renderer
         const mealDishes = { 'Menu': entry.dishes };
         const gridRows = [['Menu']];
         currentY = renderDishGrid(mealDishes, gridRows, currentY);
@@ -269,10 +246,8 @@ export function generateChefPDF(booking: Booking) {
   doc.setFontSize(6.5);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(...MUTED);
-  doc.text('V.V. Decorators — Admin & Kitchen Production Sheet', 14, 290);
-  doc.text(`Printed: ${new Date().toLocaleDateString('en-IN')}`, 196, 290, { align: 'right' });
-
-  doc.save(`Admin_Kitchen_Order_${booking.clientName.replace(/\s+/g, '_')}.pdf`);
+  doc.text('V.V. Decorators — Kitchen Menu / Production Sheet', 14, 290);
+  doc.save(`Kitchen_Menu_${booking.clientName.replace(/\s+/g, '_')}.pdf`);
 }
 
 

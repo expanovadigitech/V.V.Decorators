@@ -18,7 +18,7 @@ interface Props {
   onPermanentDelete: (id: string) => void;
   onAdd: () => void;
   onViewMenu: (b: Booking) => void;
-  onExportChef: (b: Booking) => void;
+  onExportKitchen: (b: Booking) => void;
   onExportInvoice: (b: Booking) => void;
 }
 
@@ -56,7 +56,7 @@ function EventStatusToggle({
 
 export default function BookingsTable({
   bookings, onEdit, onTrash, onMarkDone, onMarkActive, onRestore, onPermanentDelete,
-  onAdd, onViewMenu, onExportChef, onExportInvoice,
+  onAdd, onViewMenu, onExportKitchen, onExportInvoice,
 }: Props) {
 
   const active  = bookings.filter(b => b.status !== 'Trashed');
@@ -91,10 +91,10 @@ export default function BookingsTable({
         <button onClick={() => onViewMenu(b)} className="action-btn menu-btn" title="View Menu">
           <Eye size={14} />
         </button>
-        <button onClick={() => onExportChef(b)} className="action-btn menu-btn" title="Admin & Kitchen PDF">
+        <button onClick={() => onExportKitchen(b)} className="action-btn menu-btn" title="Kitchen Menu (Staff)">
           <ScrollText size={14} />
         </button>
-        <button onClick={() => onExportInvoice(b)} className="action-btn menu-btn" title="Invoice PDF">
+        <button onClick={() => onExportInvoice(b)} className="action-btn menu-btn" title="Detailed Invoice (Admin)">
           <Receipt size={14} />
         </button>
         <button onClick={() => onEdit(b)} className="action-btn edit-btn" title="Edit">

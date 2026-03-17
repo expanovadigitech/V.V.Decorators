@@ -426,21 +426,26 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                 </div>
               )}
 
-              {/* Guest Count */}
-              <div className="field-group">
-                <label className="field-label">{isMultiDay ? 'Overall / Dinner Guests' : 'Total Guests'}</label>
-                <input type="number" min={0} value={form.guestCount || ''} onChange={e => setField('guestCount', parseInt(e.target.value) || 0)}
-                  placeholder="e.g. 250" className={`field-input ${errors.guestCount ? 'input-error' : ''}`} />
-                {errors.guestCount && <span className="error-msg">{errors.guestCount}</span>}
-              </div>
+              {/* Guest Count & Price - Only for Single Day */}
+              {!isMultiDay && (
+                <>
+                  {/* Guest Count */}
+                  <div className="field-group">
+                    <label className="field-label">Total Guests</label>
+                    <input type="number" min={0} value={form.guestCount || ''} onChange={e => setField('guestCount', parseInt(e.target.value) || 0)}
+                      placeholder="e.g. 250" className={`field-input ${errors.guestCount ? 'input-error' : ''}`} />
+                    {errors.guestCount && <span className="error-msg">{errors.guestCount}</span>}
+                  </div>
 
-              {/* Per Plate Cost */}
-              <div className="field-group">
-                <label className="field-label">Per Plate Cost (₹)</label>
-                <input type="number" min={0} value={form.perPlateCost || ''} onChange={e => setField('perPlateCost', parseFloat(e.target.value) || 0)}
-                  placeholder="e.g. 850" className={`field-input ${errors.perPlateCost ? 'input-error' : ''}`} />
-                {errors.perPlateCost && <span className="error-msg">{errors.perPlateCost}</span>}
-              </div>
+                  {/* Per Plate Cost */}
+                  <div className="field-group">
+                    <label className="field-label">Per Plate Cost (₹)</label>
+                    <input type="number" min={0} value={form.perPlateCost || ''} onChange={e => setField('perPlateCost', parseFloat(e.target.value) || 0)}
+                      placeholder="e.g. 850" className={`field-input ${errors.perPlateCost ? 'input-error' : ''}`} />
+                    {errors.perPlateCost && <span className="error-msg">{errors.perPlateCost}</span>}
+                  </div>
+                </>
+              )}
 
               {/* Total Event Value — editable override */}
               <div className="field-group computed-field">
@@ -460,9 +465,12 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                   className="field-input"
                 />
                 <span className="computed-hint">
-                  {form.guestCount && form.perPlateCost
-                    ? `${form.guestCount} guests × ₹${form.perPlateCost} = auto`
-                    : 'Enter manually if no per-plate pricing'}
+                  {isMultiDay 
+                    ? 'Sum of all meals + Extra + Rooms = auto' 
+                    : (form.guestCount && form.perPlateCost 
+                        ? `${form.guestCount} guests × ₹${form.perPlateCost} = auto`
+                        : 'Enter manually if no per-plate pricing')
+                  }
                 </span>
               </div>
 
