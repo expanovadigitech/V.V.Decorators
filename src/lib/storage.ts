@@ -30,8 +30,10 @@ export async function loadBookings(): Promise<Booking[]> {
       additionalServices: Array.isArray(b.additionalServices) ? b.additionalServices : [],
       roomCost: typeof b.roomCost === 'number' ? b.roomCost : 0,
       daysOverview: Array.isArray(b.daysOverview) ? b.daysOverview : [],
+      dayMeals: Array.isArray(b.dayMeals) ? b.dayMeals : [],
       menuItems: typeof b.menuItems === 'object' && b.menuItems !== null ? b.menuItems : {},
       mealMenus: typeof b.mealMenus === 'object' && b.mealMenus !== null ? b.mealMenus : {},
+      invoiceDescription: typeof b.invoiceDescription === 'string' ? b.invoiceDescription : '',
     })) as Booking[];
   } catch (err) {
     console.error('Exception loading bookings:', err);

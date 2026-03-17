@@ -34,8 +34,8 @@ export default function InvoiceModal({ booking, onClose, onGenerate }: Props) {
   const [extraPlates, setExtraPlates]             = useState(0);
   const [miscCharges, setMiscCharges]             = useState<Array<{ id: string; desc: string; amount: number }>>([]);
   const [discount, setDiscount]                   = useState(0);
-  const [customDescription, setCustomDescription] = useState(DEFAULT_DESCRIPTION);
-  const [saveToRecord, setSaveToRecord]           = useState(false);
+  const [customDescription, setCustomDescription] = useState(booking.invoiceDescription || DEFAULT_DESCRIPTION);
+  const [saveToRecord, setSaveToRecord]           = useState(true); // Default to true now as requested
 
   const calc = useMemo(() => {
     const base           = booking.totalEventValue;

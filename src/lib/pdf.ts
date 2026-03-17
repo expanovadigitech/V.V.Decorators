@@ -221,52 +221,38 @@ export function generateChefPDF(booking: Booking) {
   }
 
   // ── MULTI-DAY: Render by meal type ──────────────────────────────────────────
-  if (booking.eventType === 'Multi-Day' && booking.mealMenus) {
-    const MEALS: Array<{ name: string; cats: string[] }> = [
-      { name: 'Breakfast', cats: ['Starters', 'Main Course', 'Others'] },
-      { name: 'Lunch',     cats: ['Starters', 'Main Course', 'Roti', 'Chinese', 'Sweet and Ice Cream', 'Salad', 'Others'] },
-      { name: 'High Tea',  cats: ['Starters', 'Others'] },
-      { name: 'Dinner',    cats: ['Starters', 'Main Course', 'Roti', 'Chinese', 'Sweet and Ice Cream', 'Salad', 'Others'] },
-    ];
-    const MEAL_GRID: Record<string, string[][]> = {
-      'Breakfast': [['Starters', 'Main Course', 'Others']],
-      'Lunch':     [['Starters', 'Main Course', 'Roti'], ['Chinese', 'Sweet and Ice Cream', 'Salad'], [/* Others full row */]],
-      'High Tea':  [['Starters', 'Others']],
-      'Dinner':    [['Starters', 'Main Course', 'Roti'], ['Chinese', 'Sweet and Ice Cream', 'Salad']],
-    };
-
-    MEALS.forEach(({ name }) => {
-      const section     = (booking.mealMenus!)[name];
-      const mealDishes  = section?.dishes || {};
-      const guestCount  = section?.guestCount || 0;
-
-      // Skip fully empty meal sections
-      const totalDishes = Object.values(mealDishes).reduce((n, arr) => n + arr.length, 0);
-      if (totalDishes === 0 && guestCount === 0) return;
-
-      // Meal header bar
+  if (booking.eventType === 'Multi-Day' && booking.dayMeals) {
+    booking.dayMeals.forEach((dayMeal) => {
+      // Day header
       if (currentY + 12 > 286) { doc.addPage(); currentY = 14; }
       doc.setFillColor(10, 50, 100);
       doc.roundedRect(MARGIN, currentY, USABLE_W, 9, 2, 2, 'F');
       doc.setFontSize(8.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...GOLD);
-      doc.text(name.toUpperCase(), MARGIN + 4, currentY + 6);
-      if (guestCount > 0) {
-        doc.setTextColor(200, 220, 255);
-        doc.setFontSize(7.5);
-        doc.text(`${guestCount} guests`, MARGIN + USABLE_W - 4, currentY + 6, { align: 'right' });
-      }
+      const dayTitle = `DAY ${dayMeal.day} ${dayMeal.date ? `(${dayMeal.date})` : ''} - ${dayMeal.venue || 'No Venue Specified'}`;
+      doc.text(dayTitle.toUpperCase(), MARGIN + 4, currentY + 6);
       currentY += 12;
 
-      // Build grid rows for this meal (max 3 columns)
-      const cats = Object.entries(mealDishes).filter(([, d]) => d.length > 0).map(([c]) => c);
-      if (cats.length === 0) { currentY += 2; return; }
+      const meals = ['Breakfast', 'Lunch', 'High Tea', 'Dinner'] as const;
+      meals.forEach(meal => {
+        const entry = dayMeal.meals[meal];
+        if (!entry || entry.dishes.length === 0) return;
 
-      const gridRows: string[][] = [];
-      for (let i = 0; i < cats.length; i += 3) gridRows.push(cats.slice(i, i + 3));
-      currentY = renderDishGrid(mealDishes, gridRows, currentY);
-      currentY += 4;
+        // Meal sub-header
+        if (currentY + 10 > 286) { doc.addPage(); currentY = 14; }
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(20, 120, 60);
+        doc.text(`${meal.toUpperCase()} ${entry.venue ? `— Venue: ${entry.venue}` : ''}`, MARGIN, currentY + 4);
+        currentY += 6;
+
+        // Since it's a flat array, mock a category for the grid renderer
+        const mealDishes = { 'Menu': entry.dishes };
+        const gridRows = [['Menu']];
+        currentY = renderDishGrid(mealDishes, gridRows, currentY);
+        currentY += 2;
+      });
     });
 
   } else {
@@ -469,60 +455,58 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
   Y = (doc as any).lastAutoTable.finalY + 8;
 
   // ── Meal Schedule (Multi-Day) ────────────────────────────────────────────
-  if (booking.eventType === 'Multi-Day' && booking.mealMenus) {
-    const MEALS = ['Breakfast', 'Lunch', 'High Tea', 'Dinner'];
-    const activeMeals = MEALS.filter(m => {
-      const sec = (booking.mealMenus!)[m];
-      if (!sec) return false;
-      const dishCount = Object.values(sec.dishes).reduce((n, arr) => n + arr.length, 0);
-      return dishCount > 0 || (sec.guestCount ?? 0) > 0 || !!sec.venue;
+  if (booking.eventType === 'Multi-Day' && (booking.dayMeals || []).length > 0) {
+    
+    doc.setDrawColor(220, 228, 240);
+    doc.setLineWidth(0.5);
+    doc.line(14, Y, 196, Y);
+    Y += 5;
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...NAVY_RGB);
+    doc.text('MEAL SCHEDULE & ITINERARY', 14, Y);
+    Y += 5;
+
+    const mealRows: string[][] = [];
+    const meals = ['Breakfast', 'Lunch', 'High Tea', 'Dinner'] as const;
+
+    booking.dayMeals!.forEach(dayMeal => {
+      // Add day header row
+      const dayHeaderStr = `Day ${dayMeal.day}${dayMeal.date ? ` - ${dayMeal.date}` : ''} (${dayMeal.venue || 'No overall venue'})`;
+      mealRows.push([{ content: dayHeaderStr, colSpan: 3, styles: { fillColor: [240, 245, 250], fontStyle: 'bold', textColor: NAVY_RGB } }] as any);
+
+      meals.forEach(m => {
+        const entry = dayMeal.meals[m];
+        if (entry.dishes.length > 0 || entry.venue) {
+          mealRows.push([
+            m,
+            entry.venue || '—',
+            entry.dishes.length > 0 ? entry.dishes.join(', ') : '—',
+          ]);
+        }
+      });
     });
 
-    if (activeMeals.length > 0) {
-      doc.setDrawColor(220, 228, 240);
-      doc.setLineWidth(0.5);
-      doc.line(14, Y, 196, Y);
-      Y += 5;
-
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...NAVY_RGB);
-      doc.text('MEAL SCHEDULE', 14, Y);
-      Y += 5;
-
-      const mealRows: string[][] = [];
-      activeMeals.forEach(m => {
-        const sec = (booking.mealMenus!)[m]!;
-        const dishList = Object.entries(sec.dishes)
-          .filter(([, d]) => d.length > 0)
-          .map(([, d]) => d.join(', '))
-          .join(' | ');
-        mealRows.push([
-          m,
-          sec.venue || '—',
-          sec.guestCount ? String(sec.guestCount) : '—',
-          dishList || '—',
-        ]);
-      });
-
+    if (mealRows.length > 0) {
       autoTable(doc, {
         startY: Y,
-        head: [['Meal', 'Venue', 'Guests', 'Dishes']],
+        head: [['Meal', 'Venue', 'Dishes']],
         body: mealRows,
         theme: 'grid',
         headStyles: { fillColor: [10, 50, 100], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 8 },
         bodyStyles: { fontSize: 7.5, textColor: [20, 35, 60] },
         columnStyles: {
-          0: { cellWidth: 22 },
-          1: { cellWidth: 38 },
-          2: { cellWidth: 18, halign: 'center' },
-          3: { cellWidth: 104 },
+          0: { cellWidth: 26 },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 116 },
         },
         margin: { left: 14, right: 14 },
       });
       Y = (doc as any).lastAutoTable.finalY + 6;
     }
   }
+
 
   // ── Notes / Custom Description ─────────────────────────────────────────────
   if (params.customDescription && params.customDescription.trim()) {

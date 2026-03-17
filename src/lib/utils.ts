@@ -1,4 +1,4 @@
-import { Booking, BookingStatus, FilterType, MealSection, MealType } from '@/types';
+import { Booking, BookingStatus, FilterType, MealSection, MealType, DayMeal, MealEntry } from '@/types';
 import { format, isThisMonth, isFuture, parseISO, startOfDay, differenceInHours } from 'date-fns';
 
 export function generateId(): string {
@@ -45,6 +45,20 @@ export function createEmptyMealMenus(): Record<string, MealSection> {
   return result;
 }
 
+export function createEmptyDayMeal(dayNum: number): DayMeal {
+  return {
+    day: dayNum,
+    date: '',
+    venue: '',
+    meals: {
+      'Breakfast': { venue: '', dishes: [] },
+      'Lunch': { venue: '', dishes: [] },
+      'High Tea': { venue: '', dishes: [] },
+      'Dinner': { venue: '', dishes: [] }
+    }
+  };
+}
+
 export function createEmptyBooking(): Omit<Booking, 'id' | 'createdAt' | 'updatedAt' | 'totalEventValue' | 'balanceAmount'> {
   return {
     clientName: '',
@@ -75,7 +89,9 @@ export function createEmptyBooking(): Omit<Booking, 'id' | 'createdAt' | 'update
       'Others': [],
     },
     mealMenus: createEmptyMealMenus(),
+    dayMeals: [createEmptyDayMeal(1)],
     notes: '',
+    invoiceDescription: '',
     roomsRequired: 0,
     roomCost: 0,
     swimmingPool: false,

@@ -57,11 +57,11 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
   const [customDishCategory, setCustomDishCategory] = useState<string>(MENU_CATEGORIES[0]);
   const [menuSearch, setMenuSearch]                 = useState('');
 
-  // Active accordion for multi-day meal planner
-  const [openMeal, setOpenMeal]             = useState<MealType | null>('Breakfast');
-  // Category for custom dish in meal section
-  const [mealCustomDishCategory, setMealCustomDishCategory] = useState<Record<string, string>>({});
-  const [mealCustomDish, setMealCustomDish] = useState<Record<string, string>>({});
+  // Active accordion for day card
+  const [openDayIdx, setOpenDayIdx] = useState<number | null>(0);
+  
+  // Custom dish text input state keyed by `${dayIdx}-${mealType}`
+  const [customDishInputs, setCustomDishInputs] = useState<Record<string, string>>({});
 
   const [form, setForm] = useState<Booking>(() => {
     const empty = createEmptyBooking();
@@ -104,13 +104,6 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
   function setField<K extends keyof Booking>(key: K, value: Booking[K]) {
     setForm(prev => updateFinancials({ ...prev, [key]: value }));
     if (errors[key]) setErrors(e => ({ ...e, [key]: '' }));
-  }
-
-  // ── Multi-Day Meal venue helper ────────────────────────────────────────────
-  function setMealVenue(meal: string, venue: string) {
-    const menus = { ...getMealMenus() };
-    menus[meal] = { ...(menus[meal] || createEmptyMealSection()), venue };
-    setField('mealMenus', menus);
   }
 
   // ── Days Overview ──────────────────────────────────────────────────────────
@@ -165,37 +158,59 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
     setField('additionalServices', list);
   }
 
-  // ── Multi-Day Meal helpers ─────────────────────────────────────────────────
-  function getMealMenus(): Record<string, MealSection> {
-    return form.mealMenus || createEmptyMealMenus();
+  // ── Multi-Day Meal helpers (Day First) ─────────────────────────────────────
+  function handleAddDayMeal() {
+    const arr = [...(form.dayMeals || [])];
+    arr.push({
+      day: arr.length + 1,
+      date: '',
+      venue: '',
+      meals: {
+        'Breakfast': { venue: '', dishes: [] },
+        'Lunch': { venue: '', dishes: [] },
+        'High Tea': { venue: '', dishes: [] },
+        'Dinner': { venue: '', dishes: [] }
+      }
+    });
+    setField('dayMeals', arr);
   }
-  function setMealGuestCount(meal: string, count: number) {
-    const menus = { ...getMealMenus() };
-    menus[meal] = { ...menus[meal], guestCount: count };
-    setField('mealMenus', menus);
+
+  function handleRemoveDayMeal(idx: number) {
+    const arr = (form.dayMeals || []).filter((_, i) => i !== idx).map((d, i) => ({ ...d, day: i + 1 }));
+    setField('dayMeals', arr);
   }
-  function toggleMealDish(meal: string, category: string, dish: string) {
-    const menus = { ...getMealMenus() };
-    const section = { ...(menus[meal] || createEmptyMealSection()) };
-    const list = section.dishes[category] || [];
-    section.dishes = {
-      ...section.dishes,
-      [category]: list.includes(dish) ? list.filter(d => d !== dish) : [...list, dish],
-    };
-    menus[meal] = section;
-    setField('mealMenus', menus);
+
+  function updateDayMealField(idx: number, field: any, value: any) {
+    const arr = [...(form.dayMeals || [])];
+    arr[idx] = { ...arr[idx], [field]: value };
+    setField('dayMeals', arr);
   }
-  function addMealCustomDish(meal: string) {
-    const dish = (mealCustomDish[meal] || '').trim();
-    const cat  = mealCustomDishCategory[meal] || 'Others';
+
+  function updateMealEntry(dayIdx: number, mealType: MealType, field: any, value: any) {
+    const arr = [...(form.dayMeals || [])];
+    const meals = { ...arr[dayIdx].meals };
+    meals[mealType] = { ...meals[mealType], [field]: value };
+    arr[dayIdx] = { ...arr[dayIdx], meals };
+    setField('dayMeals', arr);
+  }
+
+  function addDishToMeal(dayIdx: number, mealType: MealType) {
+    const key = `${dayIdx}-${mealType}`;
+    const dish = (customDishInputs[key] || '').trim();
     if (!dish) return;
-    const menus   = { ...getMealMenus() };
-    const section = { ...(menus[meal] || createEmptyMealSection()) };
-    const list    = section.dishes[cat] || [];
-    if (!list.includes(dish)) section.dishes = { ...section.dishes, [cat]: [...list, dish] };
-    menus[meal] = section;
-    setField('mealMenus', menus);
-    setMealCustomDish(prev => ({ ...prev, [meal]: '' }));
+
+    const arr = [...(form.dayMeals || [])];
+    const entry = arr[dayIdx].meals[mealType];
+    if (!entry.dishes.includes(dish)) {
+      updateMealEntry(dayIdx, mealType, 'dishes', [...entry.dishes, dish]);
+    }
+    setCustomDishInputs(prev => ({ ...prev, [key]: '' }));
+  }
+
+  function removeDishFromMeal(dayIdx: number, mealType: MealType, dishToRemove: string) {
+    const arr = [...(form.dayMeals || [])];
+    const entry = arr[dayIdx].meals[mealType];
+    updateMealEntry(dayIdx, mealType, 'dishes', entry.dishes.filter(d => d !== dishToRemove));
   }
 
   // ── Validate (flexible — only block obvious errors) ──────────────────────────
@@ -598,94 +613,126 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                 </div>
               )}
 
-              {/* ── Multi-Day: Meal Planner accordion ── */}
+              {/* ── Multi-Day: Day-wise Meal Planner ── */}
               {isMultiDay && (
                 <div className="meal-planner">
-                  <div className="meal-planner-header">
-                    <UtensilsCrossed size={16} />
-                    <span>Buffet Meal Planner</span>
-                    <span className="meal-planner-hint">Set menu & guest count per meal session</span>
+                  <div className="meal-planner-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <UtensilsCrossed size={16} style={{ display: 'inline', marginRight: '6px' }} />
+                      <span style={{ fontWeight: 600 }}>Multi-Day Itinerary</span>
+                      <p className="meal-planner-hint" style={{ marginTop: '2px' }}>Configure dates, venues, and meals per day</p>
+                    </div>
+                    <button type="button" className="btn-secondary btn-sm" onClick={handleAddDayMeal}>
+                      <Plus size={14} /> Add Day
+                    </button>
                   </div>
 
-                  {MEAL_TYPES.map(meal => {
-                    const section  = (form.mealMenus || {})[meal] || createEmptyMealSection();
-                    const cats     = MEAL_CATEGORIES[meal] || [];
-                    const isOpen   = openMeal === meal;
-                    const mealCat  = mealCustomDishCategory[meal] || cats[0] || 'Others';
-                    const mealDish = mealCustomDish[meal] || '';
-
-                    // Count selected dishes across all categories
-                    const totalDishes = cats.reduce((n, c) => n + (section.dishes[c] || []).length, 0);
-
+                  {(form.dayMeals || []).map((dayMeal, dayIdx) => {
+                    const isOpen = openDayIdx === dayIdx;
                     return (
-                      <div key={meal} className={`meal-accordion ${isOpen ? 'meal-open' : ''}`}>
-                        <button type="button" className="meal-accordion-header" onClick={() => setOpenMeal(isOpen ? null : meal)}>
-                          <div className="meal-header-left">
+                      <div key={dayIdx} className={`meal-accordion ${isOpen ? 'meal-open' : ''}`} style={{ marginBottom: '1rem' }}>
+                        
+                        <div className="meal-accordion-header" onClick={() => setOpenDayIdx(isOpen ? null : dayIdx)} style={{ display: 'flex', gap: '1rem', cursor: 'pointer' }}>
+                          <div className="meal-header-left" style={{ flex: 1 }}>
                             <ChevronRight size={15} className={`meal-chevron ${isOpen ? 'meal-chevron-open' : ''}`} />
-                            <span className="meal-title">{meal}</span>
-                            {totalDishes > 0 && <span className="meal-dish-count">{totalDishes} dish{totalDishes !== 1 ? 'es' : ''}</span>}
+                            <span className="meal-title">Day {dayMeal.day}</span>
+                            {dayMeal.date && <span style={{ marginLeft: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{dayMeal.date}</span>}
                           </div>
-                          <div className="meal-guest-input" onClick={e => e.stopPropagation()}>
-                            <label>Guests:</label>
-                            <input type="number" min={0} value={section.guestCount || ''} onChange={e => setMealGuestCount(meal, parseInt(e.target.value) || 0)}
-                              placeholder="0" className="field-input meal-guest-field" />
-                          </div>
-                        </button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); handleRemoveDayMeal(dayIdx); }} className="action-btn delete-btn">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
 
                         {isOpen && (
-                          <div className="meal-accordion-body">
-                            {/* Per-meal venue */}
-                            <div className="field-group full-width" style={{ marginBottom: '0.75rem' }}>
-                              <label className="field-label" style={{ marginBottom: '0.35rem', display: 'block' }}>
-                                Venue for {meal}
-                              </label>
-                              <input
-                                type="text"
-                                value={section.venue || ''}
-                                onChange={e => setMealVenue(meal, e.target.value)}
-                                placeholder={`e.g. Poolside Hall, Banquet Room A…`}
-                                className="field-input"
-                              />
+                          <div className="meal-accordion-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingTop: '1rem' }}>
+                            
+                            {/* Day Header Inputs */}
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                              <div className="field-group" style={{ flex: 1, marginBottom: 0 }}>
+                                <label className="field-label">Date</label>
+                                <input type="date" value={dayMeal.date || ''} onChange={e => updateDayMealField(dayIdx, 'date', e.target.value)} className="field-input" />
+                              </div>
+                              <div className="field-group" style={{ flex: 2, marginBottom: 0 }}>
+                                <label className="field-label">Overall Venue for Day {dayMeal.day}</label>
+                                <input type="text" value={dayMeal.venue || ''} onChange={e => updateDayMealField(dayIdx, 'venue', e.target.value)} placeholder="e.g. Lawn + Banquet" className="field-input" />
+                              </div>
                             </div>
 
-                            {cats.map(cat => {
-                              const filteredDishes = (STANDARD_DISHES[cat] || []).filter(d => d.toLowerCase().includes(menuSearch.toLowerCase()));
-                              const customDishes = (section.dishes[cat] || []).filter(d => !(STANDARD_DISHES[cat] || []).includes(d)).filter(d => d.toLowerCase().includes(menuSearch.toLowerCase()));
+                            <hr style={{ borderColor: 'rgba(255,255,255,0.05)', margin: '0.5rem 0' }} />
 
-                              if (filteredDishes.length === 0 && customDishes.length === 0 && menuSearch) return null;
+                            {/* 4 Meals Grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+                              {MEAL_TYPES.map(meal => {
+                                const entry = dayMeal.meals[meal];
+                                const cats = MEAL_CATEGORIES[meal] || [];
 
-                              return (
-                              <div key={cat} className="meal-category-block">
-                                <h4 className="meal-cat-title">{cat}</h4>
-                                <div className="dishes-grid">
-                                  {filteredDishes.map(dish => (
-                                    <label key={dish} className="dish-checkbox">
-                                      <input type="checkbox" checked={(section.dishes[cat] || []).includes(dish)} onChange={() => toggleMealDish(meal, cat, dish)} />
-                                      <span>{dish}</span>
-                                    </label>
-                                  ))}
-                                  {/* Custom dishes in this category */}
-                                  {customDishes.map(dish => (
-                                    <label key={dish} className="dish-checkbox">
-                                      <input type="checkbox" checked onChange={() => toggleMealDish(meal, cat, dish)} />
-                                      <span>{dish}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                              </div>
-                            )})}
+                                return (
+                                  <div key={meal} className="day-meal-section" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    
+                                    <h4 className="meal-cat-title" style={{ color: 'var(--gold)', fontSize: '1.05rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>{meal}</h4>
+                                    
+                                    <div className="field-group full-width" style={{ marginBottom: '1rem' }}>
+                                      <label className="field-label" style={{ marginBottom: '0.35rem' }}>Venue for {meal}</label>
+                                      <input type="text" value={entry.venue || ''} onChange={e => updateMealEntry(dayIdx, meal, 'venue', e.target.value)} placeholder={`e.g. Poolside Hall`} className="field-input" style={{ background: 'var(--surface-light)' }} />
+                                    </div>
 
-                            {/* Custom dish adder for meal */}
-                            <div className="meal-custom-dish-row">
-                              <select value={mealCat} onChange={e => setMealCustomDishCategory(p => ({ ...p, [meal]: e.target.value }))} className="field-input" style={{ flex: 1, minWidth: 0 }}>
-                                {cats.map(c => <option key={c} value={c}>{c}</option>)}
-                              </select>
-                              <input type="text" value={mealDish} onChange={e => setMealCustomDish(p => ({ ...p, [meal]: e.target.value }))}
-                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addMealCustomDish(meal))}
-                                placeholder="Custom dish…" className="field-input" style={{ flex: 2, minWidth: 0 }} />
-                              <button type="button" onClick={() => addMealCustomDish(meal)} className="btn-secondary btn-sm">
-                                <Plus size={14} /> Add
-                              </button>
+                                    {/* Dish Selection */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                      {cats.map(cat => {
+                                        const stdDishes = STANDARD_DISHES[cat] || [];
+                                        const filteredStd = stdDishes.filter(d => d.toLowerCase().includes(menuSearch.toLowerCase()));
+                                        if (filteredStd.length === 0 && menuSearch) return null;
+
+                                        return (
+                                          <div key={cat} className="meal-category-block">
+                                            <h5 style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>{cat}</h5>
+                                            <div className="dishes-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))' }}>
+                                              {filteredStd.map(dish => (
+                                                <label key={dish} className="dish-checkbox">
+                                                  <input type="checkbox" checked={entry.dishes.includes(dish)} 
+                                                    onChange={(e) => {
+                                                      if (e.target.checked) updateMealEntry(dayIdx, meal, 'dishes', [...entry.dishes, dish]);
+                                                      else removeDishFromMeal(dayIdx, meal, dish);
+                                                    }} 
+                                                  />
+                                                  <span style={{ fontSize: '0.85rem' }}>{dish}</span>
+                                                </label>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+
+                                      {/* Custom Dishes Added */}
+                                      {entry.dishes.filter(d => !Object.values(STANDARD_DISHES).flat().includes(d)).length > 0 && (
+                                        <div className="meal-category-block mt-2">
+                                          <h5 style={{ fontSize: '0.8rem', color: 'var(--gold-dark)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Custom Additions</h5>
+                                          <div className="dishes-grid">
+                                            {entry.dishes.filter(d => !Object.values(STANDARD_DISHES).flat().includes(d)).map(dish => (
+                                              <label key={dish} className="dish-checkbox" style={{ background: 'rgba(212,175,55,0.05)', borderRadius: '4px', padding: '4px' }}>
+                                                <input type="checkbox" checked onChange={() => removeDishFromMeal(dayIdx, meal, dish)} />
+                                                <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{dish}</span>
+                                              </label>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Add Custom Dish Input */}
+                                      <div className="meal-custom-dish-row mt-2" style={{ maxWidth: '400px' }}>
+                                        <input type="text" 
+                                          value={customDishInputs[`${dayIdx}-${meal}`] || ''} 
+                                          onChange={e => setCustomDishInputs(p => ({ ...p, [`${dayIdx}-${meal}`]: e.target.value }))}
+                                          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addDishToMeal(dayIdx, meal))}
+                                          placeholder="Type custom dish..." className="field-input m-category-select" style={{ fontSize: '0.85rem', padding: '0.5rem' }} />
+                                        <button type="button" onClick={() => addDishToMeal(dayIdx, meal)} className="btn-secondary btn-sm" style={{ padding: '0 0.8rem' }}>
+                                          <Plus size={14} /> Add
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}

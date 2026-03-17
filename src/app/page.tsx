@@ -202,15 +202,22 @@ export default function CRMPage() {
     generateInvoicePDF(b, params);
     pushToast(`✓ Invoice exported for ${b.clientName}`);
 
-    // Save updated totals back to the booking record if requested
+    // Always save the updated custom description (and optionally financial updates)
+    let updatedBooking = { ...b, invoiceDescription: params.customDescription };
+
     if (params.saveToRecord && params.includeAdditional) {
-      const updatedBooking: Booking = {
-        ...b,
+      updatedBooking = {
+        ...updatedBooking,
         totalEventValue: params.grandTotal,
         balanceAmount: params.finalBalance,
       };
-      const updated = await updateBooking(updatedBooking);
-      setBookings(updated);
+    }
+
+    const updated = await updateBooking(updatedBooking);
+    setBookings(updated);
+    
+    // Only toast about record update if financial values were changed and saved
+    if (params.saveToRecord && params.includeAdditional) {
       pushToast(`✓ Booking record updated for ${b.clientName}`);
     }
 

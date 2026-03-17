@@ -1,21 +1,33 @@
 // ── Core enums ────────────────────────────────────────────────────────────────
-// Status simplified: only Active, Done and Trashed (no Lead/Confirmed/Cancelled)
 export type BookingStatus  = 'Active' | 'Done' | 'Trashed';
 export type EventType      = 'Single Day' | 'Multi-Day';
 export type TimingCategory = 'Morning' | 'Afternoon' | 'Evening' | 'Others';
+export type MealType       = 'Breakfast' | 'Lunch' | 'High Tea' | 'Dinner';
 
-// Meal types for Multi-Day buffet planner
-export type MealType = 'Breakfast' | 'Lunch' | 'High Tea' | 'Dinner';
+// ── Single meal entry inside a day ───────────────────────────────────────────
+export interface MealEntry {
+  venue: string;
+  dishes: string[]; // flat tag list
+}
 
+// ── A single day in a multi-day event ────────────────────────────────────────
+export interface DayMeal {
+  day: number;
+  date?: string;    // ISO date string for that specific day
+  venue?: string;   // overall day venue
+  meals: Record<MealType, MealEntry>;
+}
+
+// ── Legacy (kept for backwards-compat hydration) ─────────────────────────────
 export interface MealSection {
   guestCount: number;
-  venue?: string;                            // per-meal venue
-  dishes: Record<string, string[]>;          // same categories as single-day menu
+  venue?: string;
+  dishes: Record<string, string[]>;
 }
 
 export interface DayOverview {
-  day: number;    // Day 1, Day 2, etc.
-  label: string;  // e.g. "Haldi", "Wedding"
+  day: number;
+  label: string;
 }
 
 export interface Booking {
@@ -24,42 +36,45 @@ export interface Booking {
 
   // ── Event Scheduling ─────────────────────────────────────────────────────
   eventType: EventType;
-  eventDate: string;             // ISO date string (primary / start date)
-  eventEndDate?: string;         // ISO date string (end date for multi-day)
-  daysOverview?: DayOverview[];  // per-day sub-event labels (multi-day only)
+  eventDate: string;
+  eventEndDate?: string;
+  daysOverview?: DayOverview[];
+
+  // ── Multi-Day: NEW Day-first structure ────────────────────────────────────
+  dayMeals?: DayMeal[];
 
   // ── Timing ───────────────────────────────────────────────────────────────
   timingCategory: TimingCategory;
   startTime: string;
   endTime: string;
-  customTiming?: string;         // free-text when timingCategory === 'Others'
+  customTiming?: string;
 
   // ── Venue & Guests ────────────────────────────────────────────────────────
   venue: string;
   primaryPhone: string;
   alternativePhone: string;
-  guestCount: number;            // overall / dinner guest count
+  guestCount: number;
 
   // ── Financials ────────────────────────────────────────────────────────────
   perPlateCost: number;
-  totalEventValue: number;       // computed: guestCount * perPlateCost
+  totalEventValue: number;
+  overrideTotalAmount?: number;
   advancePaid: number;
   paymentMode: 'Cash' | 'UPI' | 'Cheque' | 'Bank Transfer';
   chequeNumber?: string;
-  balanceAmount: number;         // computed: totalEventValue - advancePaid
+  balanceAmount: number;
 
   // ── Status & Menu ─────────────────────────────────────────────────────────
   status: BookingStatus;
-  menuItems: Record<string, string[]>;        // Single-Day categorised menu
-  mealMenus?: Record<string, MealSection>;    // Multi-Day meal sections
+  menuItems: Record<string, string[]>;
+  mealMenus?: Record<string, MealSection>; // legacy, kept for DB compat
   notes: string;
-  overrideTotalAmount?: number;              // Manual override for total amount
+  invoiceDescription?: string;             // persistent invoice description
 
   // ── Facilities ────────────────────────────────────────────────────────────
   roomsRequired: number;
-  roomCost?: number;             // per room cost or total room cost? User asked for "Room Cost" field next to rooms, mathematically it should probably be per room or just a flat total? Let's treat it as total or per room. I will call it roomCost and multiply by roomsRequired in utils.
+  roomCost?: number;
   swimmingPool: boolean;
-  // Migrated from string -> array
   additionalServices: Array<{ id: string; name: string; cost: number }>;
 
   // ── Timestamps ────────────────────────────────────────────────────────────
