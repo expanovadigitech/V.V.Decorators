@@ -30,7 +30,9 @@ CREATE TABLE IF NOT EXISTS bookings (
   status text,
   "menuItems" jsonb,
   "mealMenus" jsonb,
+  "dayMeals" jsonb,
   notes text,
+  "invoiceDescription" text,
   
   "roomsRequired" integer,
   "roomCost" numeric,
