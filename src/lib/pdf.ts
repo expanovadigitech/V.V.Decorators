@@ -79,9 +79,8 @@ export function generateKitchenPDF(booking: Booking) {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 31, 63);
   doc.text('CONTACT', 14, 47);
-  doc.text('TIMING', 80, 47);
-
-  // Private info hidden in Kitchen view
+  doc.text('TIMING', 70, 47);
+  doc.text('GUESTS', 120, 47);
   doc.text('STAFF NOTE', 155, 47);
 
   doc.setFont('helvetica', 'normal');
@@ -90,7 +89,8 @@ export function generateKitchenPDF(booking: Booking) {
   // Row 2 values
   const phoneStr = booking.primaryPhone + (booking.alternativePhone ? ` / ${booking.alternativePhone}` : '');
   doc.text(phoneStr, 14, 52);
-  doc.text(getTimingLabel(booking), 80, 52);
+  doc.text(getTimingLabel(booking), 70, 52);
+  doc.text(String(booking.guestCount || '—'), 120, 52);
   doc.text('Professional Handling Required', 155, 52);
 
   let currentY = 60;
@@ -265,6 +265,7 @@ export function generateKitchenPDF(booking: Booking) {
 // ════════════════════════════════════════════════════════════════════════════
 export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParams) {
   const doc = new jsPDF();
+  const isMultiDay = booking.eventType === 'Multi-Day';
 
   const NAVY_RGB: [number, number, number] = [0, 31, 63];
   const GOLD_RGB: [number, number, number] = [212, 175, 55];
@@ -293,7 +294,7 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
 
   // ── Client info strip ─────────────────────────────────────────────────────
   doc.setFillColor(242, 246, 251);
-  doc.rect(0, 30, 210, 22, 'F');
+  doc.rect(0, 30, 210, 28, 'F');
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
@@ -309,16 +310,15 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
   doc.text('EVENT DETAILS', 110, 38);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(20, 35, 60);
-  doc.text(`Date: ${getDateLine(booking)}`, 110, 44);
-  doc.text(`Timing: ${getTimingLabel(booking)}   Venue: ${booking.venue}`, 110, 49);
+  doc.text(`Date:    ${getDateLine(booking)}`, 110, 44);
+  doc.text(`Timing:  ${getTimingLabel(booking)}`, 110, 49);
+  doc.text(`Guests:  ${booking.guestCount}${isMultiDay ? ' (Peak)' : ''}   Venue: ${booking.venue}`, 110, 54);
 
-  let Y = 58;
+  let Y = 62;
 
   // ── Itemised bill table ────────────────────────────────────────────────────
   type TableBody = (string | number)[][];
   const body: TableBody = [];
-
-  const isMultiDay = booking.eventType === 'Multi-Day';
 
   // Primary service row(s)
   if (isMultiDay) {

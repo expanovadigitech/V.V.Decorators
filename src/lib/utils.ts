@@ -12,6 +12,7 @@ export function computeBooking(
 
   if (partial.eventType === 'Multi-Day') {
     let mealTotal = 0;
+    let maxGuests = 0;
     (partial.dayMeals || []).forEach(day => {
       Object.entries(day.meals).forEach(([mealType, meal]) => {
         const baseGuests = meal.guestCount || 0;
@@ -19,9 +20,12 @@ export function computeBooking(
         const totalGuests = baseGuests + extraPlates;
         const rate = meal.pricePerPlate || 0;
         mealTotal += totalGuests * rate;
+        if (totalGuests > maxGuests) maxGuests = totalGuests;
       });
     });
     baseValue = mealTotal + (partial.multiDayExtraCharges || 0);
+    // Explicitly sync the top-level guestCount for Multi-Day
+    (partial as any).guestCount = maxGuests;
   } else {
     baseValue = (partial.guestCount || 0) * (partial.perPlateCost || 0);
   }
