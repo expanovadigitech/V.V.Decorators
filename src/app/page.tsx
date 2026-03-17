@@ -230,20 +230,20 @@ export default function CRMPage() {
             <p className="brand-subtitle">Event Booking Management</p>
           </div>
         </div>
-        <div className="header-actions">
-          <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="btn-icon" style={{ padding: '0.5rem', borderRadius: '0.4rem', color: 'var(--text-light)', border: '1px solid var(--border)' }}>
+        <div className="header-actions desktop-actions">
+          <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="btn-icon theme-toggle-btn" title="Toggle Theme">
             {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
           </button>
           <button onClick={handleExport} className="btn-outline" disabled={displayedBookings.length === 0}>
             <Download size={16} />
-            Export CSV
+            <span>Export CSV</span>
           </button>
           <button
             onClick={() => setModal({ open: true, booking: null })}
             className="btn-primary"
           >
             <Plus size={16} />
-            New Booking
+            <span>New Booking</span>
           </button>
         </div>
       </header>
@@ -362,6 +362,25 @@ export default function CRMPage() {
           </div>
         </div>
       )}
+
+      {/* ── Mobile Bottom Nav ── */}
+      <nav className="mobile-bottom-nav">
+        <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="nav-item">
+          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+          <span>Theme</span>
+        </button>
+        <button onClick={handleExport} className="nav-item" disabled={displayedBookings.length === 0}>
+          <Download size={20} />
+          <span>Export</span>
+        </button>
+        <button
+          onClick={() => setModal({ open: true, booking: null })}
+          className="nav-item nav-item-primary"
+        >
+          <Plus size={24} />
+          <span>New</span>
+        </button>
+      </nav>
 
       {/* ── Toasts ── */}
       <Toast toasts={toasts} onDismiss={dismissToast} />

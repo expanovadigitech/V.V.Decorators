@@ -15,6 +15,13 @@ export const metadata: Metadata = {
   keywords: 'event decorator, CRM, booking management, V.V. Decorators',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5, // Allow users to zoom if needed but prevent auto-zoom on input focus (handled by font-size elsewhere)
+  userScalable: true,
+};
+
 export default function RootLayout({
   children,
 }: {
