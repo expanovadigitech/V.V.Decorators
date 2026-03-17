@@ -13,10 +13,12 @@ export function computeBooking(
   if (partial.eventType === 'Multi-Day') {
     let mealTotal = 0;
     (partial.dayMeals || []).forEach(day => {
-      Object.values(day.meals).forEach(meal => {
-        const guests = meal.guestCount || 0;
+      Object.entries(day.meals).forEach(([mealType, meal]) => {
+        const baseGuests = meal.guestCount || 0;
+        const extraPlates = meal.extraPlatesCount || 0;
+        const totalGuests = baseGuests + extraPlates;
         const rate = meal.pricePerPlate || 0;
-        mealTotal += guests * rate;
+        mealTotal += totalGuests * rate;
       });
     });
     baseValue = mealTotal + (partial.multiDayExtraCharges || 0);
@@ -66,10 +68,10 @@ export function createEmptyDayMeal(dayNum: number): DayMeal {
     date: '',
     venue: '',
     meals: {
-      'Breakfast': { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
-      'Lunch': { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
-      'High Tea': { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
-      'Dinner': { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 }
+      'Breakfast': { venue: '', dishes: [], guestCount: 0, extraPlatesCount: 0, pricePerPlate: 0 },
+      'Lunch': { venue: '', dishes: [], guestCount: 0, extraPlatesCount: 0, pricePerPlate: 0 },
+      'High Tea': { venue: '', dishes: [], guestCount: 0, extraPlatesCount: 0, pricePerPlate: 0 },
+      'Dinner': { venue: '', dishes: [], guestCount: 0, extraPlatesCount: 0, pricePerPlate: 0 }
     }
   };
 }

@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   "menuItems" jsonb,
   "mealMenus" jsonb,
   "dayMeals" jsonb,
+  "multiDayPricing" jsonb,
+  "invoiceType" text,
   notes text,
   "invoiceDescription" text,
   

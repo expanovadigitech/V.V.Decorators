@@ -9,6 +9,7 @@ export interface MealEntry {
   venue: string;
   dishes: string[]; // flat tag list
   guestCount?: number;
+  extraPlatesCount?: number;
   pricePerPlate?: number;
 }
 
@@ -71,6 +72,8 @@ export interface Booking {
   status: BookingStatus;
   menuItems: Record<string, string[]>;
   mealMenus?: Record<string, MealSection>; // legacy, kept for DB compat
+  multiDayPricing?: any;                   // detailed pricing breakdown for multi-day
+  invoiceType?: 'Admin' | 'Kitchen';       // for tracking last export type if needed
   notes: string;
   invoiceDescription?: string;             // persistent invoice description
 

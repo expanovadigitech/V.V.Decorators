@@ -16,7 +16,7 @@ import BookingsTable from '@/components/BookingsTable';
 import BookingModal from '@/components/BookingModal';
 import InvoiceModal, { InvoiceBillingParams } from '@/components/InvoiceModal';
 import Toast, { ToastMessage } from '@/components/Toast';
-import { Plus, Download, Flower2, Moon, Sun } from 'lucide-react';
+import { Plus, Download, Flower2, Moon, Sun, X } from 'lucide-react';
 import { generateKitchenPDF, generateInvoicePDF } from '@/lib/pdf';
 
 export default function CRMPage() {
@@ -203,7 +203,7 @@ export default function CRMPage() {
     pushToast(`✓ Invoice exported for ${b.clientName}`);
 
     // Always save the updated custom description (and optionally financial updates)
-    let updatedBooking = { ...b, invoiceDescription: params.customDescription };
+    let updatedBooking: Booking = { ...b, invoiceDescription: params.customDescription, invoiceType: 'Admin' };
 
     if (params.saveToRecord && params.includeAdditional) {
       updatedBooking = {
@@ -289,7 +289,12 @@ export default function CRMPage() {
             onPermanentDelete={handlePermanentDeleteRequest}
             onAdd={() => setModal({ open: true, booking: null })}
             onViewMenu={(b) => setViewMenuBooking(b)}
-            onExportKitchen={(b) => { generateKitchenPDF(b); pushToast(`✓ Kitchen Menu exported for ${b.clientName}`); }}
+            onExportKitchen={async (b) => { 
+              generateKitchenPDF(b); 
+              pushToast(`✓ Kitchen Menu exported for ${b.clientName}`);
+              const updated = await updateBooking({ ...b, invoiceType: 'Kitchen' });
+              setBookings(updated);
+            }}
             onExportInvoice={handleInvoiceRequest}
           />
         </div>
@@ -342,27 +347,91 @@ export default function CRMPage() {
       {/* ── View Menu Dialog ── */}
       {viewMenuBooking && (
         <div className="modal-backdrop" onClick={() => setViewMenuBooking(null)}>
-          <div className="confirm-dialog view-menu-dialog" onClick={(e) => e.stopPropagation()}>
-            <h3 className="confirm-title">Event Menu: {viewMenuBooking.clientName}</h3>
-            {(!viewMenuBooking.menuItems || Object.keys(viewMenuBooking.menuItems).length === 0) ? (
-              <p className="confirm-desc">No menu items selected.</p>
-            ) : (
-              <div className="quick-menu-list">
-                {Object.entries(viewMenuBooking.menuItems).map(([category, dishes]) => {
-                  if (!dishes || dishes.length === 0) return null;
-                  return (
-                    <div key={category} className="quick-menu-category">
-                      <h4 className="quick-category-title" style={{ fontSize: '0.9rem', color: 'var(--gold-dark)', marginBottom: '0.4rem', marginTop: '0.8rem' }}>{category.toUpperCase()}</h4>
-                      <ul style={{ listStyleType: 'disc', paddingLeft: '1.2rem', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-                        {Array.isArray(dishes) ? dishes.map((dish, i) => <li key={i}>{String(dish)}</li>) : <li>{String(dishes)}</li>}
-                      </ul>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          <div className="confirm-dialog view-menu-dialog" style={{ maxWidth: '800px', width: '90%' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 className="confirm-title" style={{ margin: 0 }}>Event Details: {viewMenuBooking.clientName}</h3>
+              <button onClick={() => setViewMenuBooking(null)} className="modal-close-btn"><X size={20} /></button>
+            </div>
+
+            <div className="quick-menu-tabs-content" style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
+              {viewMenuBooking.eventType === 'Multi-Day' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                  {(viewMenuBooking.dayMeals || []).map((day, dIdx) => {
+                    const overview = viewMenuBooking.daysOverview?.find(o => o.day === day.day);
+                    return (
+                      <div key={dIdx} className="view-day-section">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '2px solid var(--gold)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                           <span style={{ background: 'var(--gold)', color: 'var(--surface)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }}>Day {day.day}</span>
+                           <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--gold)' }}>{overview?.label || 'Event Day'}</h4>
+                           <span style={{ marginLeft: 'auto', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{day.date}</span>
+                        </div>
+                        
+                        <div className="table-wrapper" style={{ boxShadow: 'none', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <table className="bookings-table" style={{ fontSize: '0.85rem' }}>
+                            <thead>
+                              <tr>
+                                <th>Meal</th>
+                                <th>Venue</th>
+                                <th style={{ textAlign: 'center' }}>Total Guests</th>
+                                <th>Menu Items</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(day.meals).map(([mType, entry]) => {
+                                if (!entry.dishes.length && !entry.venue) return null;
+                                const pricing = viewMenuBooking.multiDayPricing?.[dIdx]?.meals?.[mType];
+                                return (
+                                  <tr key={mType}>
+                                    <td style={{ fontWeight: 'bold', color: 'var(--gold-dark)' }}>{mType}</td>
+                                    <td>{entry.venue || '—'}</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                      {pricing ? (
+                                        <div title={`Base: ${pricing.base} + Extra: ${pricing.extra}`}>
+                                          {pricing.total}
+                                        </div>
+                                      ) : (
+                                        (entry.guestCount || 0) + (entry.extraPlatesCount || 0)
+                                      )}
+                                    </td>
+                                    <td>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                                        {entry.dishes.map((dish, i) => (
+                                          <span key={i} style={{ background: 'rgba(212,175,55,0.1)', padding: '2px 6px', borderRadius: '3px', fontSize: '0.75rem' }}>{dish}</span>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="quick-menu-list">
+                  {(!viewMenuBooking.menuItems || Object.keys(viewMenuBooking.menuItems).length === 0) ? (
+                    <p className="confirm-desc">No menu items selected.</p>
+                  ) : (
+                    Object.entries(viewMenuBooking.menuItems).map(([category, dishes]) => {
+                      if (!dishes || dishes.length === 0) return null;
+                      return (
+                        <div key={category} className="quick-menu-category">
+                          <h4 className="quick-category-title" style={{ fontSize: '0.9rem', color: 'var(--gold-dark)', marginBottom: '0.4rem', marginTop: '0.8rem' }}>{category.toUpperCase()}</h4>
+                          <ul style={{ listStyleType: 'disc', paddingLeft: '1.2rem', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                            {Array.isArray(dishes) ? dishes.map((dish, i) => <li key={i}>{String(dish)}</li>) : <li>{String(dishes)}</li>}
+                          </ul>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
             <div className="confirm-actions mt-4">
-              <button onClick={() => setViewMenuBooking(null)} className="btn-secondary">
+              <button onClick={() => setViewMenuBooking(null)} className="btn-secondary" style={{ width: '100%' }}>
                 Close
               </button>
             </div>

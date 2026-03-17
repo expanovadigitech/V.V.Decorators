@@ -166,10 +166,10 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
       date: '',
       venue: '',
       meals: {
-        'Breakfast': { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
-        'Lunch':     { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
-        'High Tea':  { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 },
-        'Dinner':    { venue: '', dishes: [], guestCount: 0, pricePerPlate: 0 }
+        'Breakfast': { venue: '', dishes: [], guestCount: 0, extraPlatesCount: 0, pricePerPlate: 0 },
+        'Lunch':     { venue: '', dishes: [], guestCount: 0, extraPlatesCount: 0, pricePerPlate: 0 },
+        'High Tea':  { venue: '', dishes: [], guestCount: 0, extraPlatesCount: 0, pricePerPlate: 0 },
+        'Dinner':    { venue: '', dishes: [], guestCount: 0, extraPlatesCount: 0, pricePerPlate: 0 }
       }
     });
     setField('dayMeals', arr);
@@ -237,7 +237,28 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
     if (final.paymentMode !== 'Cheque') delete final.chequeNumber;
     if (final.eventType === 'Single Day') { final.eventEndDate = undefined; final.daysOverview = []; }
     if (final.timingCategory !== 'Others') final.customTiming = '';
-    if (form.venue && !venues.includes(form.venue)) saveVenue(form.venue);
+    if (final.venue && !venues.includes(form.venue)) saveVenue(form.venue);
+    
+    // Save pricing breakdown specifically for multi-day
+    if (final.eventType === 'Multi-Day') {
+      const breakdown: any[] = [];
+      (final.dayMeals || []).forEach(day => {
+        const dayPrices: any = { day: day.day, date: day.date, meals: {} };
+        Object.entries(day.meals).forEach(([mType, entry]) => {
+          const totalGuests = (entry.guestCount || 0) + (entry.extraPlatesCount || 0);
+          dayPrices.meals[mType] = {
+            base: entry.guestCount || 0,
+            extra: entry.extraPlatesCount || 0,
+            total: totalGuests,
+            rate: entry.pricePerPlate || 0,
+            amount: totalGuests * (entry.pricePerPlate || 0)
+          };
+        });
+        breakdown.push(dayPrices);
+      });
+      final.multiDayPricing = breakdown;
+    }
+
     onSave(final);
   }
 
@@ -679,16 +700,18 @@ export default function BookingModal({ booking, onSave, onClose }: Props) {
                                     
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                                       <h4 className="meal-cat-title" style={{ color: 'var(--gold)', fontSize: '1.05rem', margin: 0 }}>{meal}</h4>
-                                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Guests</label>
-                                          <input type="number" min={0} value={entry.guestCount || ''} onChange={e => updateMealEntry(dayIdx, meal, 'guestCount', parseInt(e.target.value) || 0)} className="field-input" style={{ width: '60px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
+                                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Base</label>
+                                          <input type="number" min={0} value={entry.guestCount || ''} onChange={e => updateMealEntry(dayIdx, meal, 'guestCount', parseInt(e.target.value) || 0)} className="field-input" style={{ width: '50px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Rate (₹)</label>
-                                          <input type="number" min={0} value={entry.pricePerPlate || ''} onChange={e => updateMealEntry(dayIdx, meal, 'pricePerPlate', parseInt(e.target.value) || 0)} className="field-input" style={{ width: '80px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
+                                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Extra</label>
+                                          <input type="number" min={0} value={entry.extraPlatesCount || ''} onChange={e => updateMealEntry(dayIdx, meal, 'extraPlatesCount', parseInt(e.target.value) || 0)} className="field-input" style={{ width: '50px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
                                         </div>
-                                      </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Rate</label>
+                                          <input type="number" min={0} value={entry.pricePerPlate || ''} onChange={e => updateMealEntry(dayIdx, meal, 'pricePerPlate', parseInt(e.target.value) || 0)} className="field-input" style={{ width: '70px', padding: '0.25rem 0.5rem', background: 'var(--surface-light)' }} placeholder="0" />
+                                        </div>
                                     </div>
                                     
                                     <div className="field-group full-width" style={{ marginBottom: '1rem' }}>

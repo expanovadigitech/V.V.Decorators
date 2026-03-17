@@ -18,13 +18,17 @@ export const DEFAULT_VENUES = [
 
 export async function loadBookings(): Promise<Booking[]> {
   try {
-    const { data, error } = await supabase.from('bookings').select('*').order('createdAt', { ascending: false });
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .is('trashedAt', null)
+      .order('createdAt', { ascending: false });
+    
     if (error) {
       console.error('Error fetching bookings:', error);
       return [];
     }
-    // Handle JSON parsing if necessary (Supabase SDK auto parses JSON columns typically)
-    // but just in case, we map to ensure types are correct.
+    
     return (data || []).map(b => ({
       ...b,
       additionalServices: Array.isArray(b.additionalServices) ? b.additionalServices : [],
@@ -33,6 +37,8 @@ export async function loadBookings(): Promise<Booking[]> {
       dayMeals: Array.isArray(b.dayMeals) ? b.dayMeals : [],
       menuItems: typeof b.menuItems === 'object' && b.menuItems !== null ? b.menuItems : {},
       mealMenus: typeof b.mealMenus === 'object' && b.mealMenus !== null ? b.mealMenus : {},
+      multiDayPricing: typeof b.multiDayPricing === 'object' && b.multiDayPricing !== null ? b.multiDayPricing : {},
+      invoiceType: b.invoiceType || 'Admin',
       invoiceDescription: typeof b.invoiceDescription === 'string' ? b.invoiceDescription : '',
     })) as Booking[];
   } catch (err) {

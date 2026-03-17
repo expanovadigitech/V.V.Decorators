@@ -220,8 +220,13 @@ export function generateKitchenPDF(booking: Booking) {
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(20, 120, 60);
-        const guestStr = entry.guestCount ? ` (${entry.guestCount} GUESTS)` : '';
-        doc.text(`${meal.toUpperCase()}${guestStr} ${entry.venue ? `— Venue: ${entry.venue}` : ''}`, MARGIN, currentY + 4);
+        
+        const baseQty = entry.guestCount || 0;
+        const extraQty = entry.extraPlatesCount || 0;
+        const totalQty = baseQty + extraQty;
+        
+        const qtyStr = `TOTAL QUANTITY: ${totalQty} (${baseQty} Base + ${extraQty} Extra)`;
+        doc.text(`${meal.toUpperCase()} — ${qtyStr} ${entry.venue ? ` | Venue: ${entry.venue}` : ''}`, MARGIN, currentY + 4);
         currentY += 6;
 
         // Grid renderer
@@ -318,15 +323,19 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
       meals.forEach(m => {
         const entry = day.meals[m];
         if (!entry) return;
-        const guests = entry.guestCount || 0;
-        const rate   = entry.pricePerPlate || 0;
-        if (guests > 0 && rate > 0) {
-          const mTotal = guests * rate;
+        const base = entry.guestCount || 0;
+        const extra = entry.extraPlatesCount || 0;
+        const total = base + extra;
+        const rate = entry.pricePerPlate || 0;
+        
+        if (total > 0 && rate > 0) {
+          const mTotal = total * rate;
+          const desc = extra > 0 ? `${m} (${base} Base + ${extra} Extra)` : m;
           body.push([
             day.date || `Day ${day.day}`,
-            m,
+            desc,
             entry.venue || '—',
-            String(guests),
+            String(total),
             fmt(rate),
             fmt(mTotal),
           ]);
