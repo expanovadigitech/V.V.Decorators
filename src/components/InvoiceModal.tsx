@@ -31,19 +31,19 @@ const DEFAULT_DESCRIPTION =
 export default function InvoiceModal({ booking, onClose, onGenerate }: Props) {
   // ── Additional charges toggle ────────────────────────────────────────────────
   const [includeAdditional, setIncludeAdditional] = useState(false);
-  const [extraPlates, setExtraPlates]             = useState(0);
-  const [miscCharges, setMiscCharges]             = useState<Array<{ id: string; desc: string; amount: number }>>([]);
-  const [discount, setDiscount]                   = useState(0);
+  const [extraPlates, setExtraPlates] = useState(0);
+  const [miscCharges, setMiscCharges] = useState<Array<{ id: string; desc: string; amount: number }>>([]);
+  const [discount, setDiscount] = useState(0);
   const [customDescription, setCustomDescription] = useState(booking.invoiceDescription || DEFAULT_DESCRIPTION);
-  const [saveToRecord, setSaveToRecord]           = useState(true); // Default to true now as requested
+  const [saveToRecord, setSaveToRecord] = useState(true); // Default to true now as requested
 
   const calc = useMemo(() => {
-    const base           = booking.totalEventValue;
+    const base = booking.totalEventValue;
     const extraPlatesVal = includeAdditional ? (extraPlates || 0) * booking.perPlateCost : 0;
-    const miscTotal      = includeAdditional ? miscCharges.reduce((sum, c) => sum + (c.amount || 0), 0) : 0;
-    const subtotal       = base + extraPlatesVal + miscTotal;
-    const grand          = Math.max(0, subtotal - (discount || 0));
-    const balance        = Math.max(0, grand - booking.advancePaid);
+    const miscTotal = includeAdditional ? miscCharges.reduce((sum, c) => sum + (c.amount || 0), 0) : 0;
+    const subtotal = base + extraPlatesVal + miscTotal;
+    const grand = Math.max(0, subtotal - (discount || 0));
+    const balance = Math.max(0, grand - booking.advancePaid);
     return { base, extraPlatesVal, miscTotal, subtotal, grand, balance };
   }, [booking, includeAdditional, extraPlates, miscCharges, discount]);
 
@@ -170,33 +170,33 @@ export default function InvoiceModal({ booking, onClose, onGenerate }: Props) {
                   <label className="field-label">Misc. Charges</label>
                   {miscCharges.map((charge, idx) => (
                     <div key={charge.id} className="custom-dish-input-wrap mb-2" style={{ display: 'flex', gap: '0.6rem' }}>
-                       <input
-                          type="text"
-                          value={charge.desc}
-                          onChange={e => {
-                            const list = [...miscCharges];
-                            list[idx].desc = e.target.value;
-                            setMiscCharges(list);
-                          }}
-                          placeholder="e.g. Mandap Lighting"
-                          className="field-input" style={{ flex: 2 }}
-                        />
-                        <input
-                          type="number"
-                          min={0}
-                          value={charge.amount || ''}
-                          onWheel={e => e.currentTarget.blur()}
-                          onChange={e => {
-                            const list = [...miscCharges];
-                            list[idx].amount = parseFloat(e.target.value) || 0;
-                            setMiscCharges(list);
-                          }}
-                          placeholder="Amount (₹)"
-                          className="field-input" style={{ flex: 1 }}
-                        />
-                        <button type="button" onClick={() => setMiscCharges(c => c.filter(x => x.id !== charge.id))} className="btn-secondary" style={{ color: 'var(--status-cancelled)', padding: '0.5rem' }}>
-                          <X size={16} />
-                        </button>
+                      <input
+                        type="text"
+                        value={charge.desc}
+                        onChange={e => {
+                          const list = [...miscCharges];
+                          list[idx].desc = e.target.value;
+                          setMiscCharges(list);
+                        }}
+                        placeholder="e.g. Mandap Lighting"
+                        className="field-input" style={{ flex: 2 }}
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        value={charge.amount || ''}
+                        onWheel={e => e.currentTarget.blur()}
+                        onChange={e => {
+                          const list = [...miscCharges];
+                          list[idx].amount = parseFloat(e.target.value) || 0;
+                          setMiscCharges(list);
+                        }}
+                        placeholder="Amount (₹)"
+                        className="field-input" style={{ flex: 1 }}
+                      />
+                      <button type="button" onClick={() => setMiscCharges(c => c.filter(x => x.id !== charge.id))} className="btn-secondary" style={{ color: 'var(--status-cancelled)', padding: '0.5rem' }}>
+                        <X size={16} />
+                      </button>
                     </div>
                   ))}
                   <button type="button" onClick={() => setMiscCharges(c => [...c, { id: `${Date.now()}`, desc: '', amount: 0 }])} className="btn-secondary" style={{ width: 'max-content' }}>

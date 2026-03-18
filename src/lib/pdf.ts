@@ -79,9 +79,10 @@ export function generateKitchenPDF(booking: Booking) {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 31, 63);
   doc.text('CONTACT', 14, 47);
-  doc.text('TIMING', 70, 47);
-  doc.text('GUESTS', 120, 47);
-  doc.text('STAFF NOTE', 155, 47);
+  doc.text('TIMING', 60, 47);
+  doc.text('GUESTS', 100, 47);
+  doc.text('FACILITIES', 135, 47);
+  doc.text('STAFF NOTE', 170, 47);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(20, 35, 60);
@@ -89,9 +90,12 @@ export function generateKitchenPDF(booking: Booking) {
   // Row 2 values
   const phoneStr = booking.primaryPhone + (booking.alternativePhone ? ` / ${booking.alternativePhone}` : '');
   doc.text(phoneStr, 14, 52);
-  doc.text(getTimingLabel(booking), 70, 52);
-  doc.text(String(booking.guestCount || '—'), 120, 52);
-  doc.text('Professional Handling Required', 155, 52);
+  doc.text(getTimingLabel(booking), 60, 52);
+  doc.text(String(booking.guestCount || '—'), 100, 52);
+  
+  const facilityStr = `${booking.roomsRequired || 0} Rooms${booking.swimmingPool ? ' + Pool' : ''}`;
+  doc.text(facilityStr, 135, 52);
+  doc.text('Handle with Care', 170, 52);
 
   let currentY = 60;
 
@@ -245,9 +249,14 @@ export function generateKitchenPDF(booking: Booking) {
     // ── SINGLE-DAY: original 3-column tile grid ──────────────────────────────
     const menuItems = booking.menuItems || {};
     const GRID_ROWS: string[][] = [
-      ['Welcome Drinks', 'Starters', 'Chinese'],
-      ['Main Course', 'Roti'],
-      ['Sweet and Ice Cream', 'Salad', 'Others'],
+      ['Welcome Drinks', 'Snacks', 'Starters (Veg)'],
+      ['Starters (Non-Veg)', 'Chinese Starter (Non-Veg)', 'Main Course (Veg)'],
+      ['Main Course (Mutton)', 'Main Course (Chicken)', 'Main Course (Rice)'],
+      ['Non-Veg Rice', 'Chinese Rice', 'Noodles (Veg)'],
+      ['Noodles (Non-Veg)', 'Roti / Bread', 'Chaat'],
+      ['Sweets', 'Desserts', 'Salad'],
+      ['Mukhwas', 'Water', 'Packages'],
+      ['Others']
     ];
     currentY = renderDishGrid(menuItems, GRID_ROWS, currentY);
   }
@@ -311,8 +320,9 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(20, 35, 60);
   doc.text(`Date:    ${getDateLine(booking)}`, 110, 44);
-  doc.text(`Timing:  ${getTimingLabel(booking)}`, 110, 49);
-  doc.text(`Guests:  ${booking.guestCount}${isMultiDay ? ' (Peak)' : ''}   Venue: ${booking.venue}`, 110, 54);
+  doc.text(`Timing:  ${getTimingLabel(booking)}`, 110, 48);
+  doc.text(`Guests:  ${booking.guestCount}${isMultiDay ? ' (Peak)' : ''}`, 110, 52);
+  doc.text(`Rooms:   ${booking.roomsRequired || 0}   Venue: ${booking.venue || '—'}`, 110, 56);
 
   let Y = 62;
 

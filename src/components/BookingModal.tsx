@@ -25,27 +25,61 @@ const MEAL_TYPES: MealType[] = ['Breakfast', 'Lunch', 'High Tea', 'Dinner'];
 
 // Categories available in every meal section
 const MEAL_CATEGORIES: Record<MealType, string[]> = {
-  'Breakfast': ['Starters', 'Main Course', 'Others'],
-  'Lunch':     ['Starters', 'Main Course', 'Roti', 'Chinese', 'Sweet and Ice Cream', 'Salad', 'Others'],
-  'High Tea':  ['Starters', 'Others'],
-  'Dinner':    ['Starters', 'Main Course', 'Roti', 'Chinese', 'Sweet and Ice Cream', 'Salad', 'Others'],
+  'Breakfast': ['Welcome Drinks', 'Snacks', 'Roti / Bread', 'Others'],
+  'Lunch':     ['Welcome Drinks', 'Starters (Veg)', 'Starters (Non-Veg)', 'Chinese Starter (Non-Veg)', 'Main Course (Veg)', 'Main Course (Mutton)', 'Main Course (Chicken)', 'Main Course (Rice)', 'Non-Veg Rice', 'Chinese Rice', 'Noodles (Veg)', 'Noodles (Non-Veg)', 'Roti / Bread', 'Chaat', 'Sweets', 'Desserts', 'Salad', 'Mukhwas', 'Water', 'Packages', 'Others'],
+  'High Tea':  ['Welcome Drinks', 'Snacks', 'Chaat', 'Sweets', 'Others'],
+  'Dinner':    ['Welcome Drinks', 'Starters (Veg)', 'Starters (Non-Veg)', 'Chinese Starter (Non-Veg)', 'Main Course (Veg)', 'Main Course (Mutton)', 'Main Course (Chicken)', 'Main Course (Rice)', 'Non-Veg Rice', 'Chinese Rice', 'Noodles (Veg)', 'Noodles (Non-Veg)', 'Roti / Bread', 'Chaat', 'Sweets', 'Desserts', 'Salad', 'Mukhwas', 'Water', 'Packages', 'Others'],
 };
 
 // Single-day menu categories
 const MENU_CATEGORIES = [
-  'Welcome Drinks', 'Starters', 'Main Course', 'Roti', 'Chinese',
-  'Sweet and Ice Cream', 'Salad', 'Others',
+  'Welcome Drinks',
+  'Snacks',
+  'Starters (Veg)',
+  'Starters (Non-Veg)',
+  'Chinese Starter (Non-Veg)',
+  'Main Course (Veg)',
+  'Main Course (Mutton)',
+  'Main Course (Chicken)',
+  'Main Course (Rice)',
+  'Non-Veg Rice',
+  'Chinese Rice',
+  'Noodles (Veg)',
+  'Noodles (Non-Veg)',
+  'Roti / Bread',
+  'Chaat',
+  'Sweets',
+  'Desserts',
+  'Salad',
+  'Mukhwas',
+  'Water',
+  'Packages',
+  'Others'
 ];
 
 const STANDARD_DISHES: Record<string, string[]> = {
-  'Welcome Drinks':     ['Fresh Lime Soda', 'Aam Panna', 'Virgin Mojito'],
-  'Starters':          ['Paneer Tikka', 'Hara Bhara Kebab', 'Veg Manchurian Dry'],
-  'Main Course':       ['Dal Makhani', 'Mix Veg', 'Paneer Butter Masala', 'Veg Biryani'],
-  'Roti':              ['Butter Naan', 'Tandoori Roti', 'Missi Roti'],
-  'Chinese':           ['Hakka Noodles', 'Veg Fried Rice', 'Chilli Paneer'],
-  'Sweet and Ice Cream': ['Gulab Jamun', 'Rasmalai', 'Vanilla Ice Cream'],
-  'Salad':             ['Green Salad', 'Russian Salad'],
-  'Others':            [],
+  'Welcome Drinks': ['Juice', 'Pineapple Juice', 'Watermelon Juice', 'Orange Juice', 'Guava Juice', 'Cold Drinks', 'Pepsi', 'Coca Cola', 'Miranda', 'Sprite', 'All Types of Cold Drinks', 'Mocktails', 'Fruit Beer', 'Fruit Punch', 'Blue Lagoon', 'Rose', 'Russian'],
+  'Snacks': ['French Fries', 'Paneer Tikka', 'Sabudana Vada', 'Ragda Kachori', 'Dahi Vada', 'Mutter Gota', 'Farali', 'Pav Bhaji', 'Veg Pizza', 'Mini Pizza', 'Mini Burgers', 'All Types of Bhajiya', 'Kothimbir Vadi', 'One More', 'American Corn', 'Mushroom Balls', 'Sandwich Dhokla'],
+  'Starters (Veg)': ['Hara Bhara Kabab', 'Spring Roll', 'Paneer Tikka', 'Cheese Ball', 'Paneer Chilly', 'Sesame Toast', 'Mushroom Chilly', 'Veg. Manchurian Stick', 'Veg. Nuggets', 'Paneer Stick', 'Baby Corn', 'Veg. Crispy', 'Veg. Dragon Roll', 'Veg. Salt Roll', 'Veg. Corn Toast', 'Veg. Schezwan Cutlet', 'Veg. Finger'],
+  'Starters (Non-Veg)': ['Chicken Reshmi Kabab', 'Chicken Tikka', 'Chicken Lollipop', 'Chicken Chilly Dry', 'Chicken 65', 'Chicken Schezwan Stick', 'Chicken Cheese Roll', 'Kolhapuri Kabab', 'Chicken Pista', 'Chicken Tikka with Bone', 'Chicken Chilly', 'Chicken Drumsticks', 'Chicken Fry with Bone', 'Chicken Tandoori', 'Chicken Tangdi', 'Fish Kabab', 'Fish Golden Fry', 'Fish Koliwada', 'Fish Crispy', 'Fish Finger'],
+  'Chinese Starter (Non-Veg)': ['Chicken Lollipop', 'Chicken Chilly', 'Chicken Chilly Dry', 'Chicken Manchurian', 'Chicken Spring Roll', 'Chicken Dragon Roll'],
+  'Main Course (Veg)': ['Shahi Paneer', 'Butter Paneer Masala', 'Paneer Handi', 'Paneer Kadai', 'Paneer Bhurji', 'Mutter Mushroom', 'Paneer Mushroom', 'Tawa Mushroom', 'Tawa Bhaji', 'Veg Kolhapuri', 'Mix Veg', 'Mix Veg Makhanwala', 'Mix Veg Handi', 'Navratan Korma', 'Dal Fry', 'Dal Tadka', 'Dal Makhani', 'Butter Masala', 'Chole Masala', 'Surbhi', 'Veg Jaipuri', 'Veg Kadai', 'Veg Handi'],
+  'Main Course (Mutton)': ['Mutton Rogan Josh', 'Mutton Sukka', 'Mutton Masala', 'Mutton Kadai', 'Mutton Keema', 'Mutton Liver Masala', 'Mutton Fry', 'Mutton Kheema Masala', 'Mutton Kolhapuri'],
+  'Main Course (Chicken)': ['Chicken Tikka Masala', 'Chicken Butter Masala', 'Chicken Kadai', 'Chicken Handi', 'Chicken Kolhapuri', 'Chicken Curry', 'Chicken Masala', 'Chicken Do Pyaza', 'Chicken Angara', 'Chicken Afghani'],
+  'Main Course (Rice)': ['Steam Rice', 'Jeera Rice', 'Veg Pulao', 'Kashmiri Pulao', 'Mutter Pulao', 'Masala Bhat', 'Veg Biryani', 'Paneer Biryani'],
+  'Non-Veg Rice': ['Chicken Fried Rice', 'Chicken Schezwan Rice', 'Chicken Singapore Rice', 'Chicken Triple Rice', 'Chicken Hong Kong Rice'],
+  'Chinese Rice': ['Veg Fried Rice', 'Veg Schezwan Rice', 'Veg Triple Rice', 'Veg Hong Kong Rice', 'Veg Singapore Rice', 'Veg Paneer Rice', 'Veg Mushroom Rice'],
+  'Noodles (Veg)': ['Veg Noodles', 'Veg Schezwan Noodles', 'Veg Singapore Noodles', 'Veg Chowmein', 'Veg Hong Kong Noodles'],
+  'Noodles (Non-Veg)': ['Chicken Schezwan Noodles', 'Chicken Singapore Noodles', 'Chicken Chowmein', 'Chicken Hong Kong Noodles'],
+  'Roti / Bread': ['Tandoori Roti', 'Butter Roti', 'Naan', 'Butter Naan', 'Garlic Naan', 'Kulcha', 'Butter Kulcha', 'Paratha', 'Laccha Paratha', 'Missi Roti', 'Rumali Roti'],
+  'Chaat': ['Pani Puri', 'Dahi Puri', 'Sev Puri', 'Ragda Pattice'],
+  'Sweets': ['Gulab Jamun', 'Gajar Halwa', 'Jalebi Rabdi', 'Basundi'],
+  'Desserts': ['Vanilla Ice Cream', 'Strawberry Ice Cream', 'Tutti Frutti Ice Cream', 'Malai Kulfi', 'Brownie', 'Pastry'],
+  'Salad': ['Green Salad', 'Russian Salad', 'Fruit Salad', 'Sprouts Salad'],
+  'Mukhwas': ['Mukhwas Pan', 'Meetha Pan', 'Saunf'],
+  'Water': ['Mineral Water', 'Bisleri Water'],
+  'Packages': ['Silver Package', 'Gold Package', 'Platinum Package', 'Platinum + Gold Package'],
+  'Others': []
 };
 
 export default function BookingModal({ booking, onSave, onClose }: Props) {
