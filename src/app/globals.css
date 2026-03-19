@@ -1032,7 +1032,7 @@ input[type=number] {
 
 [data-theme='dark'] .venue-option,
 [data-theme='dark'] .dropdown-item {
-  color: #ffffff;
+  color: #ffffff !important;
   border-bottom-color: rgba(255,255,255,0.05);
 }
 

@@ -284,9 +284,9 @@ export function generateKitchenPDF(booking: Booking) {
         
         currentY = renderDishGrid(mealDishes, ['Menu'], currentY);
         currentY += 2;
-      });
+        });
     });
-
+  } else {
     // ── SINGLE-DAY: auto-grouped and filtered tile grid ────────────────────
     const menuItems = booking.menuItems || {};
     const ALL_CATS = [
