@@ -80,7 +80,7 @@ export function generateKitchenPDF(booking: Booking) {
   doc.setTextColor(0, 31, 63);
   doc.text('CONTACT', 14, 47);
   doc.text('TIMING', 60, 47);
-  doc.text('GUESTS', 100, 47);
+  doc.text('GUEST COUNT', 100, 47);
   doc.text('FACILITIES', 135, 47);
   doc.text('STAFF NOTE', 170, 47);
 
@@ -95,7 +95,7 @@ export function generateKitchenPDF(booking: Booking) {
   
   const facilityStr = `${booking.roomsRequired || 0} Rooms${booking.swimmingPool ? ' + Pool' : ''}`;
   doc.text(facilityStr, 135, 52);
-  doc.text('Handle with Care', 170, 52);
+  doc.text('Handle with Care', 180, 52);
 
   let currentY = 60;
 
@@ -139,48 +139,74 @@ export function generateKitchenPDF(booking: Booking) {
   const TEXT:   [number, number, number] = [20, 35, 60];
   const MUTED:  [number, number, number] = [160, 170, 185];
 
-  // Helper: render a 3-column dish tile grid for a given menuItems map
-  function renderDishGrid(menuItems: Record<string, string[]>, gridRows: string[][], startY: number): number {
+  // Helper: render a responsive dish tile grid.
+  // Filters out empty categories and chunks them into rows of 3.
+  function renderDishGrid(menuItems: Record<string, string[]>, categories: string[], startY: number): number {
     let y = startY;
-    gridRows.forEach(rowCats => {
-      const numCols  = rowCats.length;
-      const colWidth = (USABLE_W - COL_GAP * (numCols - 1)) / numCols;
-      let maxDishes  = 0;
-      rowCats.forEach(cat => {
-        const d = (menuItems[cat] || []).length;
-        if (d > maxDishes) maxDishes = d;
-      });
-      const bodyH = Math.max(maxDishes, 1) * LINE_H + PAD * 2;
-      const tileH = HDR_H + bodyH;
-      if (y + tileH > 286) { doc.addPage(); y = 14; }
+    
+    // 1. Filter only categories that have at least one dish
+    const activeCats = categories.filter(cat => (menuItems[cat] || []).length > 0);
+    if (activeCats.length === 0) return y;
 
-      rowCats.forEach((cat, colIdx) => {
-        const x      = MARGIN + colIdx * (colWidth + COL_GAP);
-        const dishes = menuItems[cat] || [];
+    // 2. Separate Veg and Non-Veg categories for strict separation if they exist
+    const vegCats = activeCats.filter(cat => cat.toUpperCase().includes('(VEG)') || ['WELCOME DRINKS', 'SNACKS', 'CHAAT', 'SWEETS', 'DESSERTS', 'SALAD', 'MUKHWAS', 'WATER', 'PACKAGES'].includes(cat.toUpperCase()));
+    const nonVegCats = activeCats.filter(cat => !vegCats.includes(cat));
 
-        doc.setDrawColor(200, 212, 225);
-        doc.setLineWidth(0.25);
-        doc.roundedRect(x, y, colWidth, tileH, 2, 2, 'S');
-
-        doc.setFillColor(...NAVY);
-        doc.roundedRect(x, y, colWidth, HDR_H + 2, 2, 2, 'F');
-        doc.rect(x, y + HDR_H - 1, colWidth, 3, 'F');
-
-        doc.setFontSize(7.5);
+    function chunkAndRender(cats: string[], sectionTitle?: string): void {
+      if (cats.length === 0) return;
+      
+      // Add section sub-header if needed
+      if (sectionTitle) {
+        if (y + 10 > 286) { doc.addPage(); y = 14; }
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...GOLD);
-        const catLabel = doc.splitTextToSize(cat.toUpperCase(), colWidth - 4)[0];
-        doc.text(catLabel, x + colWidth / 2, y + HDR_H - 1.5, { align: 'center' });
+        doc.setTextColor(...NAVY);
+        doc.text(sectionTitle, MARGIN, y + 5);
+        y += 8;
+      }
 
-        doc.setFillColor(...LIGHT);
-        doc.rect(x, y + HDR_H, colWidth, bodyH, 'F');
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
+      // Chunk into rows of 3
+      const rows: string[][] = [];
+      for (let i = 0; i < cats.length; i += 3) {
+        rows.push(cats.slice(i, i + 3));
+      }
 
-        if (dishes.length === 0) {
-          doc.setTextColor(...MUTED);
-          doc.text('—', x + colWidth / 2, y + HDR_H + bodyH / 2, { align: 'center', baseline: 'middle' });
-        } else {
+      rows.forEach(rowCats => {
+        const numCols  = rowCats.length;
+        const colWidth = (USABLE_W - COL_GAP * (numCols - 1)) / numCols;
+        let maxDishes  = 0;
+        rowCats.forEach(cat => {
+          const d = (menuItems[cat] || []).length;
+          if (d > maxDishes) maxDishes = d;
+        });
+        const bodyH = Math.max(maxDishes, 1) * LINE_H + PAD * 2;
+        const tileH = HDR_H + bodyH;
+        
+        if (y + tileH > 286) { doc.addPage(); y = 14; }
+
+        rowCats.forEach((cat, colIdx) => {
+          const x      = MARGIN + colIdx * (colWidth + COL_GAP);
+          const dishes = menuItems[cat] || [];
+
+          doc.setDrawColor(200, 212, 225);
+          doc.setLineWidth(0.25);
+          doc.roundedRect(x, y, colWidth, tileH, 2, 2, 'S');
+
+          doc.setFillColor(...NAVY);
+          doc.roundedRect(x, y, colWidth, HDR_H + 2, 2, 2, 'F');
+          doc.rect(x, y + HDR_H - 1, colWidth, 3, 'F');
+
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...GOLD);
+          const catLabel = doc.splitTextToSize(cat.toUpperCase(), colWidth - 4)[0];
+          doc.text(catLabel, x + colWidth / 2, y + HDR_H - 1.5, { align: 'center' });
+
+          doc.setFillColor(...LIGHT);
+          doc.rect(x, y + HDR_H, colWidth, bodyH, 'F');
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+
           dishes.forEach((dish, i) => {
             const dy = y + HDR_H + PAD + i * LINE_H + LINE_H / 2;
             if (i % 2 === 1) {
@@ -193,10 +219,22 @@ export function generateKitchenPDF(booking: Booking) {
             const label = doc.splitTextToSize(String(dish), colWidth - PAD * 2 - 3)[0];
             doc.text(label, x + PAD + 4, dy, { baseline: 'middle' });
           });
-        }
+        });
+        y += tileH + ROW_GAP;
       });
-      y += tileH + ROW_GAP;
-    });
+    }
+
+    // Render Vegetarian section
+    if (vegCats.length > 0) {
+      chunkAndRender(vegCats, activeCats.length > vegCats.length ? 'VEGETARIAN SELECTIONS' : undefined);
+    }
+    
+    // Render Non-Vegetarian section
+    if (nonVegCats.length > 0) {
+      if (y > startY + 10) y += 4; // Add space between sections
+      chunkAndRender(nonVegCats, 'NON-VEGETARIAN SELECTIONS');
+    }
+
     return y;
   }
 
@@ -238,27 +276,27 @@ export function generateKitchenPDF(booking: Booking) {
         currentY += 6;
 
         // Grid renderer
-        const mealDishes = { 'Menu': entry.dishes };
-        const gridRows = [['Menu']];
-        currentY = renderDishGrid(mealDishes, gridRows, currentY);
+        const mealDishes = entry.dishes.reduce((acc, d) => {
+          acc['Menu'] = acc['Menu'] || [];
+          acc['Menu'].push(d);
+          return acc;
+        }, {} as Record<string, string[]>);
+        
+        currentY = renderDishGrid(mealDishes, ['Menu'], currentY);
         currentY += 2;
       });
     });
 
-  } else {
-    // ── SINGLE-DAY: original 3-column tile grid ──────────────────────────────
+    // ── SINGLE-DAY: auto-grouped and filtered tile grid ────────────────────
     const menuItems = booking.menuItems || {};
-    const GRID_ROWS: string[][] = [
-      ['Welcome Drinks', 'Snacks', 'Starters (Veg)'],
-      ['Starters (Non-Veg)', 'Chinese Starter (Non-Veg)', 'Main Course (Veg)'],
-      ['Main Course (Mutton)', 'Main Course (Chicken)', 'Main Course (Rice)'],
-      ['Non-Veg Rice', 'Chinese Rice', 'Noodles (Veg)'],
-      ['Noodles (Non-Veg)', 'Roti / Bread', 'Chaat'],
-      ['Sweets', 'Desserts', 'Salad'],
-      ['Mukhwas', 'Water', 'Packages'],
-      ['Others']
+    const ALL_CATS = [
+      'Welcome Drinks', 'Snacks', 'Starters (Veg)', 'Starters (Non-Veg)', 
+      'Chinese Starter (Non-Veg)', 'Main Course (Veg)', 'Main Course (Mutton)', 
+      'Main Course (Chicken)', 'Main Course (Rice)', 'Non-Veg Rice', 'Chinese Rice', 
+      'Noodles (Veg)', 'Noodles (Non-Veg)', 'Roti / Bread', 'Chaat', 'Sweets', 
+      'Desserts', 'Salad', 'Mukhwas', 'Water', 'Packages', 'Others'
     ];
-    currentY = renderDishGrid(menuItems, GRID_ROWS, currentY);
+    currentY = renderDishGrid(menuItems, ALL_CATS, currentY);
   }
 
   doc.setFontSize(6.5);
@@ -321,7 +359,7 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
   doc.setTextColor(20, 35, 60);
   doc.text(`Date:    ${getDateLine(booking)}`, 110, 44);
   doc.text(`Timing:  ${getTimingLabel(booking)}`, 110, 48);
-  doc.text(`Guests:  ${booking.guestCount}${isMultiDay ? ' (Peak)' : ''}`, 110, 52);
+  doc.text(`Guest Count: ${booking.guestCount}${isMultiDay ? ' (Peak)' : ''}`, 110, 52);
   doc.text(`Rooms:   ${booking.roomsRequired || 0}   Venue: ${booking.venue || '—'}`, 110, 56);
 
   let Y = 62;
@@ -466,7 +504,7 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
   }
 
   const tableHead = isMultiDay 
-    ? [['Date', 'Meal', 'Venue', 'Guests', 'Rate', 'Subtotal']]
+    ? [['Date', 'Meal', 'Venue', 'Guest Count', 'Rate', 'Subtotal']]
     : [['Description', 'Unit Rate', 'Qty', 'Amount']];
 
   const columnStyles: any = isMultiDay 
@@ -474,9 +512,9 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
         0: { cellWidth: 25 }, // Date
         1: { cellWidth: 25 }, // Meal
         2: { cellWidth: 60 }, // Venue
-        3: { halign: 'center', cellWidth: 15 }, // Guests
-        4: { halign: 'right', cellWidth: 25 },  // Rate
-        5: { halign: 'right', cellWidth: 30, fontStyle: 'bold' }, // Subtotal
+        3: { halign: 'center', cellWidth: 22 }, // Guest Count
+        4: { halign: 'right', cellWidth: 23 },  // Rate
+        5: { halign: 'right', cellWidth: 25, fontStyle: 'bold' }, // Subtotal
       }
     : {
         0: { cellWidth: 85 },
