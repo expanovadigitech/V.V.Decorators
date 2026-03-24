@@ -39,26 +39,26 @@ export function generateKitchenPDF(booking: Booking) {
   doc.setFillColor(...[0, 31, 63] as [number, number, number]);
   doc.rect(0, 0, 210, 28, 'F');
 
-  doc.setFontSize(14);
+  doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(212, 175, 55);
   doc.text('KITCHEN MENU / STAFF SHEET', 14, 11);
 
-  doc.setFontSize(8);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(255, 255, 255);
-  doc.text('V.V. DECORATORS — Internal Logistics', 14, 18);
+  doc.text('V.V. DECORATORS — Internal Logistics', 14, 19);
 
   // Invoice-style date top-right
-  doc.setFontSize(7.5);
+  doc.setFontSize(12);
   doc.setTextColor(200, 210, 225);
-  doc.text(`Printed: ${new Date().toLocaleDateString('en-IN')}`, 196, 18, { align: 'right' });
+  doc.text(`Printed: ${new Date().toLocaleDateString('en-IN')}`, 196, 19, { align: 'right' });
 
   // ── Event info strip (2 rows × 3 cols) ───────────────────────────────────
   doc.setFillColor(242, 246, 251);
-  doc.rect(0, 28, 210, 26, 'F');
+  doc.rect(0, 28, 210, 35, 'F');
 
-  doc.setFontSize(7.5);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 31, 63);
 
@@ -71,54 +71,54 @@ export function generateKitchenPDF(booking: Booking) {
   doc.setTextColor(20, 35, 60);
 
   // Row 1 values
-  doc.text(booking.clientName, 14, 40);
-  doc.text(booking.venue || '—', 80, 40);
-  doc.text(getDateLine(booking), 155, 40);
+  doc.text(booking.clientName, 14, 42);
+  doc.text(booking.venue || '—', 80, 42);
+  doc.text(getDateLine(booking), 155, 42);
 
   // Row 2 labels
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 31, 63);
-  doc.text('CONTACT', 14, 47);
-  doc.text('TIMING', 60, 47);
-  doc.text('GUEST COUNT', 100, 47);
-  doc.text('FACILITIES', 135, 47);
-  doc.text('STAFF NOTE', 170, 47);
+  doc.text('CONTACT', 14, 51);
+  doc.text('TIMING', 60, 51);
+  doc.text('GUEST COUNT', 105, 51);
+  doc.text('FACILITIES', 145, 51);
+  doc.text('STAFF NOTE', 180, 51);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(20, 35, 60);
 
   // Row 2 values
   const phoneStr = booking.primaryPhone + (booking.alternativePhone ? ` / ${booking.alternativePhone}` : '');
-  doc.text(phoneStr, 14, 52);
-  doc.text(getTimingLabel(booking), 60, 52);
-  doc.text(String(booking.guestCount || '—'), 100, 52);
+  doc.text(phoneStr, 14, 58);
+  doc.text(getTimingLabel(booking), 60, 58);
+  doc.text(String(booking.guestCount || '—'), 105, 58);
   
   const facilityStr = `${booking.roomsRequired || 0} Rooms${booking.swimmingPool ? ' + Pool' : ''}`;
-  doc.text(facilityStr, 135, 52);
-  doc.text('Handle with Care', 180, 52);
+  doc.text(facilityStr, 145, 58);
+  doc.text('Note: Kitchen', 180, 58);
 
-  let currentY = 60;
+  let currentY = 68;
 
   // ── Days Overview & Notes ─────────────────────────────────────────────────
   if (booking.eventType === 'Multi-Day' && booking.daysOverview && booking.daysOverview.length > 0) {
-    doc.setFontSize(7.5);
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 31, 63);
     doc.text('Event Overview:', 14, currentY);
     doc.setFont('helvetica', 'normal');
     const ov = doc.splitTextToSize(booking.daysOverview.map(d => `Day ${d.day}: ${d.label}`).join('  |  '), 180);
-    doc.text(ov, 30, currentY);
-    currentY += ov.length * 4 + 3;
+    doc.text(ov, 45, currentY); // Moved slightly right to avoid label overlap
+    currentY += ov.length * 5 + 4;
   }
 
   if (booking.notes) {
-    doc.setFontSize(7.5);
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'italic');
     doc.setTextColor(100, 110, 130);
     const noteLines = doc.splitTextToSize(`Special Instructions: ${booking.notes}`, 180);
     doc.text(noteLines, 14, currentY);
     doc.setFont('helvetica', 'normal');
-    currentY += noteLines.length * 4 + 3;
+    currentY += noteLines.length * 5 + 4;
   }
 
   currentY += 2;
@@ -129,8 +129,8 @@ export function generateKitchenPDF(booking: Booking) {
   const COL_GAP  = 3;
   const ROW_GAP  = 4;
   const PAD      = 3;
-  const LINE_H   = 5;
-  const HDR_H    = 7;
+  const LINE_H   = 9;
+  const HDR_H    = 11;
 
   const NAVY:   [number, number, number] = [0, 31, 63];
   const GOLD:   [number, number, number] = [212, 175, 55];
@@ -157,12 +157,12 @@ export function generateKitchenPDF(booking: Booking) {
       
       // Add section sub-header if needed
       if (sectionTitle) {
-        if (y + 10 > 286) { doc.addPage(); y = 14; }
-        doc.setFontSize(9);
+        if (y + 12 > 286) { doc.addPage(); y = 14; }
+        doc.setFontSize(15);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...NAVY);
-        doc.text(sectionTitle, MARGIN, y + 5);
-        y += 8;
+        doc.text(sectionTitle, MARGIN, y + 6);
+        y += 10;
       }
 
       // Chunk into rows of 3
@@ -196,15 +196,15 @@ export function generateKitchenPDF(booking: Booking) {
           doc.roundedRect(x, y, colWidth, HDR_H + 2, 2, 2, 'F');
           doc.rect(x, y + HDR_H - 1, colWidth, 3, 'F');
 
-          doc.setFontSize(7.5);
+          doc.setFontSize(12);
           doc.setFont('helvetica', 'bold');
           doc.setTextColor(...GOLD);
           const catLabel = doc.splitTextToSize(cat.toUpperCase(), colWidth - 4)[0];
-          doc.text(catLabel, x + colWidth / 2, y + HDR_H - 1.5, { align: 'center' });
+          doc.text(catLabel, x + colWidth / 2, y + HDR_H - 2, { align: 'center' });
 
           doc.setFillColor(...LIGHT);
           doc.rect(x, y + HDR_H, colWidth, bodyH, 'F');
-          doc.setFontSize(8);
+          doc.setFontSize(14);
           doc.setFont('helvetica', 'normal');
 
           dishes.forEach((dish, i) => {
@@ -242,15 +242,15 @@ export function generateKitchenPDF(booking: Booking) {
   if (booking.eventType === 'Multi-Day' && booking.dayMeals) {
     booking.dayMeals.forEach((dayMeal) => {
       // Day header
-      if (currentY + 12 > 286) { doc.addPage(); currentY = 14; }
+      if (currentY + 15 > 286) { doc.addPage(); currentY = 14; }
       doc.setFillColor(10, 50, 100);
-      doc.roundedRect(MARGIN, currentY, USABLE_W, 9, 2, 2, 'F');
-      doc.setFontSize(8.5);
+      doc.roundedRect(MARGIN, currentY, USABLE_W, 11, 2, 2, 'F');
+      doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...GOLD);
       const dayTitle = `DAY ${dayMeal.day} ${dayMeal.date ? `(${dayMeal.date})` : ''} - ${dayMeal.venue || 'No Venue Specified'}`;
-      doc.text(dayTitle.toUpperCase(), MARGIN + 4, currentY + 6);
-      currentY += 12;
+      doc.text(dayTitle.toUpperCase(), MARGIN + 4, currentY + 7);
+      currentY += 15;
 
       const meals = ['Breakfast', 'Lunch', 'High Tea', 'Dinner'] as const;
       meals.forEach(meal => {
@@ -258,8 +258,8 @@ export function generateKitchenPDF(booking: Booking) {
         if (!entry || entry.dishes.length === 0) return;
 
         // Meal sub-header
-        if (currentY + 10 > 286) { doc.addPage(); currentY = 14; }
-        doc.setFontSize(8);
+        if (currentY + 12 > 286) { doc.addPage(); currentY = 14; }
+        doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(20, 120, 60);
         
@@ -272,8 +272,8 @@ export function generateKitchenPDF(booking: Booking) {
         const venueLabel = entry.venue ? `[${entry.venue.toUpperCase()}]` : '';
         const detailLabel = `(${baseQty} Base + ${extraQty} Extra)`;
         
-        doc.text(`${meal.toUpperCase()}  —  ${qtyLabel} ${detailLabel}   ${venueLabel}`, MARGIN, currentY + 4);
-        currentY += 6;
+        doc.text(`${meal.toUpperCase()}  —  ${qtyLabel} ${detailLabel}   ${venueLabel}`, MARGIN, currentY + 5);
+        currentY += 8;
 
         // Grid renderer
         const mealDishes = entry.dishes.reduce((acc, d) => {
@@ -299,7 +299,7 @@ export function generateKitchenPDF(booking: Booking) {
     currentY = renderDishGrid(menuItems, ALL_CATS, currentY);
   }
 
-  doc.setFontSize(6.5);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(...MUTED);
   doc.text('V.V. Decorators — Kitchen Menu / Production Sheet', 14, 290);
@@ -321,19 +321,19 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
   doc.setFillColor(...NAVY_RGB);
   doc.rect(0, 0, 210, 30, 'F');
 
-  doc.setFontSize(18);
+  doc.setFontSize(26);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...GOLD_RGB);
   doc.text('OFFICIAL INVOICE', 14, 13);
 
-  doc.setFontSize(9);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(255, 255, 255);
   doc.text('V.V. DECORATORS — Premium Event & Catering Services', 14, 21);
 
   // Invoice number + date (right side)
   const invoiceNum = `VVD-${Date.now().toString().slice(-6)}`;
-  doc.setFontSize(8);
+  doc.setFontSize(14);
   doc.setTextColor(212, 175, 55);
   doc.text(`Invoice #${invoiceNum}`, 196, 13, { align: 'right' });
   doc.setTextColor(255, 255, 255);
@@ -341,28 +341,31 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
 
   // ── Client info strip ─────────────────────────────────────────────────────
   doc.setFillColor(242, 246, 251);
-  doc.rect(0, 30, 210, 28, 'F');
+  doc.rect(0, 30, 210, 42, 'F');
 
-  doc.setFontSize(9);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...NAVY_RGB);
   doc.text('BILLED TO', 14, 38);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(20, 35, 60);
   doc.text(booking.clientName, 14, 44);
   doc.text(`Ph: ${booking.primaryPhone}${booking.alternativePhone ? ' / ' + booking.alternativePhone : ''}`, 14, 49);
 
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...NAVY_RGB);
   doc.text('EVENT DETAILS', 110, 38);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(20, 35, 60);
   doc.text(`Date:    ${getDateLine(booking)}`, 110, 44);
-  doc.text(`Timing:  ${getTimingLabel(booking)}`, 110, 48);
-  doc.text(`Guest Count: ${booking.guestCount}${isMultiDay ? ' (Peak)' : ''}`, 110, 52);
-  doc.text(`Rooms:   ${booking.roomsRequired || 0}   Venue: ${booking.venue || '—'}`, 110, 56);
+  doc.text(`Timing:  ${getTimingLabel(booking)}`, 110, 50);
+  doc.text(`Guest Count: ${booking.guestCount}${isMultiDay ? ' (Peak)' : ''}`, 110, 56);
+  doc.text(`Rooms:   ${booking.roomsRequired || 0}   Venue: ${booking.venue || '—'}`, 110, 64);
 
-  let Y = 62;
+  let Y = 75;
 
   // ── Itemised bill table ────────────────────────────────────────────────────
   type TableBody = (string | number)[][];
@@ -532,9 +535,9 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
       fillColor: NAVY_RGB,
       textColor: [212, 175, 55],
       fontStyle: 'bold',
-      fontSize: 9,
+      fontSize: 14,
     },
-    bodyStyles: { fontSize: 8, textColor: [20, 35, 60] },
+    bodyStyles: { fontSize: 13, textColor: [20, 35, 60] },
     columnStyles,
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 14, right: 14 },
@@ -560,8 +563,8 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
   }
 
   totalsBody.push([
-    { content: 'GRAND TOTAL', styles: { fontStyle: 'bold', fontSize: 11, fillColor: NAVY_RGB, textColor: GOLD_RGB } },
-    { content: fmt(params.grandTotal), styles: { halign: 'right', fontStyle: 'bold', fontSize: 11, fillColor: NAVY_RGB, textColor: GOLD_RGB } },
+    { content: 'GRAND TOTAL', styles: { fontStyle: 'bold', fontSize: 16, fillColor: NAVY_RGB, textColor: GOLD_RGB } },
+    { content: fmt(params.grandTotal), styles: { halign: 'right', fontStyle: 'bold', fontSize: 16, fillColor: NAVY_RGB, textColor: GOLD_RGB } },
   ]);
 
   totalsBody.push([
@@ -570,15 +573,15 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
   ]);
 
   totalsBody.push([
-    { content: 'BALANCE DUE', styles: { fontStyle: 'bold', fontSize: 10, textColor: params.finalBalance > 0 ? [160, 30, 30] : [20, 120, 60] } },
-    { content: fmt(params.finalBalance), styles: { halign: 'right', fontStyle: 'bold', fontSize: 10, textColor: params.finalBalance > 0 ? [160, 30, 30] : [20, 120, 60] } },
+    { content: 'BALANCE DUE', styles: { fontStyle: 'bold', fontSize: 15, textColor: params.finalBalance > 0 ? [160, 30, 30] : [20, 120, 60] } },
+    { content: fmt(params.finalBalance), styles: { halign: 'right', fontStyle: 'bold', fontSize: 15, textColor: params.finalBalance > 0 ? [160, 30, 30] : [20, 120, 60] } },
   ]);
 
   autoTable(doc, {
     startY: Y,
     body: totalsBody as any,
     theme: 'plain',
-    styles: { fontSize: 9, cellPadding: { top: 2, bottom: 2, left: 4, right: 4 } },
+    styles: { fontSize: 14, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 } },
     columnStyles: {
       0: { cellWidth: 140 },
       1: { cellWidth: 40 },
@@ -594,13 +597,13 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
     doc.setDrawColor(220, 228, 240);
     doc.setLineWidth(0.5);
     doc.line(14, Y, 196, Y);
-    Y += 5;
+    Y += 7;
 
-    doc.setFontSize(8);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...NAVY_RGB);
     doc.text('MEAL SCHEDULE & ITINERARY', 14, Y);
-    Y += 5;
+    Y += 8;
 
     const mealRows: string[][] = [];
     const meals = ['Breakfast', 'Lunch', 'High Tea', 'Dinner'] as const;
@@ -628,8 +631,8 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
         head: [['Meal', 'Venue', 'Dishes']],
         body: mealRows,
         theme: 'grid',
-        headStyles: { fillColor: [10, 50, 100], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 8 },
-        bodyStyles: { fontSize: 7.5, textColor: [20, 35, 60] },
+        headStyles: { fillColor: [10, 50, 100], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 14 },
+        bodyStyles: { fontSize: 13, textColor: [20, 35, 60] },
         columnStyles: {
           0: { cellWidth: 26 },
           1: { cellWidth: 40 },
@@ -637,7 +640,7 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
         },
         margin: { left: 14, right: 14 },
       });
-      Y = (doc as any).lastAutoTable.finalY + 6;
+      Y = (doc as any).lastAutoTable.finalY + 8;
     }
   }
 
@@ -648,24 +651,24 @@ export function generateInvoicePDF(booking: Booking, params: InvoiceBillingParam
     doc.setDrawColor(220, 228, 240);
     doc.setLineWidth(0.5);
     doc.line(14, Y, 196, Y);
-    Y += 5;
+    Y += 7;
 
-    doc.setFontSize(8);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...NAVY_RGB);
     doc.text('NOTES & TERMS', 14, Y);
-    Y += 5;
+    Y += 8;
 
     doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8.5);
+    doc.setFontSize(14);
     doc.setTextColor(60, 70, 90);
     const descLines = doc.splitTextToSize(params.customDescription.trim(), 182);
     doc.text(descLines, 14, Y);
-    Y += descLines.length * 5 + 4;
+    Y += descLines.length * 6 + 5;
   }
 
   // ── Footer ─────────────────────────────────────────────────────────────────
-  doc.setFontSize(7);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(160, 170, 185);
   doc.text('V.V. Decorators — Thank you for your business.', 14, 290);
