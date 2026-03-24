@@ -40,6 +40,7 @@
 
   --transition: 0.25s cubic-bezier(.4,0,.2,1);
   --font: 'Inter', system-ui, sans-serif;
+  --base-font-size: 16px;
 }
 
 [data-theme='dark'] {
@@ -76,7 +77,7 @@
 ═══════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; font-size: var(--base-font-size); }
 
 body {
   font-family: var(--font);

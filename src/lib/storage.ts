@@ -14,6 +14,9 @@ export const DEFAULT_VENUES = [
   'Garden of Eden Resort',
 ];
 
+// Paste your Google Apps Script Web App URL here after deployment
+const GOOGLE_SHEETS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywRWEUVFu-6b4GfODTiM_O4uK6gD4V2CWyZdldmplxBgyM5gVs3warLzak32H0pJc1MA/exec'; 
+
 // ─── Bookings ────────────────────────────────────────────────────────────────
 
 export async function loadBookings(): Promise<Booking[]> {
@@ -47,10 +50,50 @@ export async function loadBookings(): Promise<Booking[]> {
   }
 }
 
+/**
+ * Synchronizes booking data with Google Sheets and Google Calendar.
+ * The calendar event is created by the Google Apps Script side.
+ */
+async function syncToGoogleSheets(booking: Booking) {
+  if (!GOOGLE_SHEETS_SCRIPT_URL) return;
+  
+  try {
+    // Send critical fields for the calendar event and sheet log
+    const payload = {
+      id: booking.id,
+      clientName: booking.clientName,
+      eventDate: booking.eventDate,
+      venue: booking.venue,
+      primaryPhone: booking.primaryPhone,
+      guestCount: booking.guestCount || 0,
+      totalEventValue: booking.totalEventValue || 0,
+      advancePaid: booking.advancePaid || 0,
+      balanceAmount: booking.balanceAmount || 0,
+      status: booking.status,
+      notes: booking.notes || ''
+    };
+
+    const response = await fetch(GOOGLE_SHEETS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Apps Script requires no-cors for simple requests or handles OPTIONS differently
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    console.log('Sync to Google Sheets initiated');
+  } catch (err) {
+    console.error('Failed to sync with Google Sheets:', err);
+  }
+}
+
 export async function addBooking(booking: Booking): Promise<Booking[]> {
   try {
     const { error } = await supabase.from('bookings').insert([booking]);
-    if (error) console.error('Error adding booking:', error);
+    if (error) {
+      console.error('Error adding booking:', error);
+    } else {
+      // Sync to Google Sheets & Calendar on successful save
+      syncToGoogleSheets(booking);
+    }
   } catch (err) {
     console.error('Exception adding booking:', err);
   }
@@ -60,7 +103,12 @@ export async function addBooking(booking: Booking): Promise<Booking[]> {
 export async function updateBooking(updated: Booking): Promise<Booking[]> {
   try {
     const { error } = await supabase.from('bookings').update(updated).eq('id', updated.id);
-    if (error) console.error('Error updating booking:', error);
+    if (error) {
+      console.error('Error updating booking:', error);
+    } else {
+      // Update sync (creates a new entry or updates based on Apps Script logic)
+      syncToGoogleSheets(updated);
+    }
   } catch (err) {
     console.error('Exception updating booking:', err);
   }

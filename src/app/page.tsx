@@ -16,7 +16,7 @@ import BookingsTable from '@/components/BookingsTable';
 import BookingModal from '@/components/BookingModal';
 import InvoiceModal, { InvoiceBillingParams } from '@/components/InvoiceModal';
 import Toast, { ToastMessage } from '@/components/Toast';
-import { Plus, Download, Flower2, Moon, Sun, X } from 'lucide-react';
+import { Plus, Download, Flower2, Moon, Sun, X, Minus, ALargeSmall } from 'lucide-react';
 import { generateKitchenPDF, generateInvoicePDF } from '@/lib/pdf';
 
 export default function CRMPage() {
@@ -41,12 +41,16 @@ export default function CRMPage() {
 
   // ── Theme State ─────────────────────────────────────────────────────────────
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [fontSize, setFontSize] = useState<number>(16);
 
   // Load from localStorage/Supabase on mount
   useEffect(() => {
     loadBookings().then(setBookings);
     const savedTheme = localStorage.getItem('vvd_theme');
     if (savedTheme === 'dark') setTheme('dark');
+    
+    const savedFontSize = localStorage.getItem('vvd_font_size');
+    if (savedFontSize) setFontSize(Number(savedFontSize));
   }, []);
 
   useEffect(() => {
@@ -58,6 +62,11 @@ export default function CRMPage() {
       localStorage.setItem('vvd_theme', 'light');
     }
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--base-font-size', `${fontSize}px`);
+    localStorage.setItem('vvd_font_size', fontSize.toString());
+  }, [fontSize]);
 
   // ─── Toast helpers ──────────────────────────────────────────────────────────
   const pushToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -241,6 +250,29 @@ export default function CRMPage() {
           <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="btn-icon theme-toggle-btn" title="Toggle Theme">
             {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
           </button>
+          
+          <div className="font-size-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--white)', padding: '0.2rem', borderRadius: 'var(--radius)', border: '1.5px solid var(--border)' }}>
+            <button 
+              onClick={() => setFontSize(s => Math.max(12, s - 1))} 
+              className="btn-icon" 
+              style={{ width: '30px', height: '30px', border: 'none' }}
+              title="Decrease Font Size"
+            >
+              <Minus size={14} />
+            </button>
+            <div style={{ padding: '0 0.5rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <ALargeSmall size={16} />
+              <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>{fontSize}px</span>
+            </div>
+            <button 
+              onClick={() => setFontSize(s => Math.min(24, s + 1))} 
+              className="btn-icon" 
+              style={{ width: '30px', height: '30px', border: 'none' }}
+              title="Increase Font Size"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
           <button onClick={handleExport} className="btn-outline" disabled={displayedBookings.length === 0}>
             <Download size={16} />
             <span>Export CSV</span>
@@ -484,6 +516,10 @@ export default function CRMPage() {
         <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="nav-item">
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
           <span>Theme</span>
+        </button>
+        <button onClick={() => setFontSize(s => s >= 24 ? 16 : s + 2)} className="nav-item">
+          <ALargeSmall size={20} />
+          <span>Size</span>
         </button>
         <button onClick={handleExport} className="nav-item" disabled={displayedBookings.length === 0}>
           <Download size={20} />
